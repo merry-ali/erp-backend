@@ -23,4 +23,4 @@ Solo los módulos priorizados para la U1 están funcionales. Los demás existen 
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone [https://github.com/TU-USUARIO/erp-molinera-backend.git](https://github.com/TU-USUARIO/erp-molinera-backend.git)
+   git clone https://github.com/merry-ali/erp-backend.git
