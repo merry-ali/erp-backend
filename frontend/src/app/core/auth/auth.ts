@@ -1,0 +1,22 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
+import { Router, CanActivateFn } from '@angular/router';
+import { from, catchError, switchMap, throwError, firstValueFrom } from 'rxjs';
+const issuer='http://localhost:8180/realms/maiz-erp';const client='maiz-spa';
+const base64=(bytes:Uint8Array)=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+@Injectable({providedIn:'root'}) export class Auth {
+ private http=inject(HttpClient); token=signal('');perfil=signal<any>(null);private refreshToken='';private idToken='';private pendiente:Promise<void>|null=null;
+ es(...roles:string[]){return this.perfil()?.roles?.some((r:string)=>roles.includes(r))??false;}
+ puede(m:string){return this.perfil()?.modulos?.includes(m)??false;}
+ async login(destino='/panel'){const verifier=base64(crypto.getRandomValues(new Uint8Array(32)));const state=base64(crypto.getRandomValues(new Uint8Array(24)));const nonce=base64(crypto.getRandomValues(new Uint8Array(24)));const challenge=base64(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));sessionStorage.setItem('erp-pkce',JSON.stringify({verifier,state,nonce,destino}));const q=new URLSearchParams({client_id:client,redirect_uri:location.origin+'/auth/callback',response_type:'code',scope:'openid profile email',state,nonce,code_challenge:challenge,code_challenge_method:'S256'});location.assign(issuer+'/protocol/openid-connect/auth?'+q);}
+ async callback(){const q=new URLSearchParams(location.search);const pending=JSON.parse(sessionStorage.getItem('erp-pkce')||'null');sessionStorage.removeItem('erp-pkce');if(!pending||q.get('state')!==pending.state||!q.get('code'))throw Error('Respuesta de acceso inválida o cancelada');const r=await this.exchange({grant_type:'authorization_code',code:q.get('code')!,code_verifier:pending.verifier,redirect_uri:location.origin+'/auth/callback'});const claims=JSON.parse(atob(r.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(claims.nonce!==pending.nonce)throw Error('No coincide la verificación de sesión');this.guardar(r);await this.cargarPerfil();return typeof pending.destino==='string'&&pending.destino.startsWith('/')&&!pending.destino.startsWith('//')?pending.destino:'/panel';}
+ private async exchange(body:Record<string,string>){const res=await fetch(issuer+'/protocol/openid-connect/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...body,client_id:client})});if(!res.ok)throw Error('No se pudo validar la sesión con Keycloak');return res.json();}
+ private guardar(r:any){this.token.set(r.access_token);this.refreshToken=r.refresh_token;this.idToken=r.id_token||this.idToken;}
+ async cargarPerfil(){this.perfil.set(await firstValueFrom(this.http.get('/api/sesion')));}
+ refrescar(){if(!this.pendiente)this.pendiente=(async()=>{try{if(!this.refreshToken)throw Error('Sesión finalizada');this.guardar(await this.exchange({grant_type:'refresh_token',refresh_token:this.refreshToken}));}catch(e){this.limpiar();throw e;}finally{this.pendiente=null;}})();return this.pendiente;}
+ private limpiar(){this.token.set('');this.refreshToken='';this.perfil.set(null);}
+ salir(){const id=this.idToken;this.limpiar();this.idToken='';location.assign(issuer+'/protocol/openid-connect/logout?'+new URLSearchParams({client_id:client,id_token_hint:id,post_logout_redirect_uri:location.origin+'/'}));}
+}
+export const tokenInterceptor:HttpInterceptorFn=(req,next)=>{const auth=inject(Auth);if(!req.url.startsWith('/api/'))return next(req);const trace=crypto.randomUUID();const headers:Record<string,string>={'X-Trace-ID':trace};if(auth.token())headers['Authorization']='Bearer '+auth.token();return next(req.clone({setHeaders:headers})).pipe(catchError(e=>{if(e.status!==401||!auth.token())return throwError(()=>e);return from(auth.refrescar()).pipe(switchMap(()=>next(req.clone({setHeaders:{'X-Trace-ID':trace,Authorization:'Bearer '+auth.token()}}))));}));};
+export const autenticado:CanActivateFn=(_,s)=>{const a=inject(Auth);if(a.token())return true;void a.login(s.url);return false;};
+export const porModulo:CanActivateFn=(r)=>{const a=inject(Auth);return a.puede(r.data['modulo'])?true:inject(Router).createUrlTree(['/sin-acceso']);};

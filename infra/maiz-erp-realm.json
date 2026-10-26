@@ -1,0 +1,162 @@
+{
+  "realm": "maiz-erp",
+  "enabled": true,
+  "displayName": "Sistema de Producción y Comercialización",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "accessTokenLifespan": 120,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN"
+      },
+      {
+        "name": "COMPRADOR"
+      },
+      {
+        "name": "ALMACENERO"
+      },
+      {
+        "name": "OPERARIO_PLANTA"
+      },
+      {
+        "name": "VENDEDOR"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "maiz-spa",
+      "name": "Portal ERP",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/auth/callback",
+        "http://127.0.0.1:4200/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:4200",
+        "http://127.0.0.1:4200"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/##http://127.0.0.1:4200/"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "maiz-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "maiz-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "ADMIN",
+      "lastName": "Demo",
+      "email": "admin@demo.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "compras",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "COMPRADOR",
+      "lastName": "Demo",
+      "email": "compras@demo.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "COMPRADOR"
+      ]
+    },
+    {
+      "username": "almacen",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "ALMACENERO",
+      "lastName": "Demo",
+      "email": "almacen@demo.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ALMACENERO"
+      ]
+    },
+    {
+      "username": "produccion",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "OPERARIO_PLANTA",
+      "lastName": "Demo",
+      "email": "produccion@demo.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "OPERARIO_PLANTA"
+      ]
+    },
+    {
+      "username": "ventas",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "VENDEDOR",
+      "lastName": "Demo",
+      "email": "ventas@demo.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "VENDEDOR"
+      ]
+    }
+  ]
+}

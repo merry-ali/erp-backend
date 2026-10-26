@@ -1,0 +1,2 @@
+import {Component,inject,signal} from '@angular/core';import {Router,RouterLink} from '@angular/router';import {Auth} from './auth';
+@Component({imports:[RouterLink],template:'<main class="portal"><h1>Validando acceso</h1><p>{{mensaje()}}</p><a routerLink="/">Volver al portal</a></main>'})export class Callback {mensaje=signal('Conectando con Keycloak…');private router=inject(Router);constructor(){inject(Auth).callback().then(d=>this.router.navigateByUrl(d,{replaceUrl:true})).catch(e=>this.mensaje.set(e.message));}}

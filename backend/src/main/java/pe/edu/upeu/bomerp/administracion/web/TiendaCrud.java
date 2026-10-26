@@ -1,0 +1,10 @@
+package pe.edu.upeu.bomerp.administracion.web;
+import pe.edu.upeu.bomerp.administracion.model.*;import pe.edu.upeu.bomerp.administracion.repository.*;import org.springframework.web.bind.annotation.*;import org.springframework.transaction.annotation.Transactional;import org.springframework.security.access.prepost.PreAuthorize;import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;import java.util.*;
+@RestController @RequestMapping("/api/gestion/tiendas") @RequiredArgsConstructor @Transactional public class TiendaCrud {
+ private final TiendaRepository repo;private final SucursalRepository sucursalRepo;
+ @GetMapping public List<Tienda> listar(){return repo.findAll();}
+ @GetMapping("/{id}") public Tienda obtener(@PathVariable Long id){return repo.findById(id).orElseThrow(()->new IllegalArgumentException("Registro no encontrado"));}
+ @PostMapping @PreAuthorize("hasRole('ADMIN')") public Tienda crear(@Valid @RequestBody Tienda r){var e=new Tienda();e.setNombre(r.getNombre());if(r.getSucursal()==null||r.getSucursal().getId()==null)throw new IllegalArgumentException("Selecciona Sucursal");e.setSucursal(sucursalRepo.findById(r.getSucursal().getId()).filter(x->x.isActivo()).orElseThrow(()->new IllegalArgumentException("Sucursal no existe o está inactivo")));return repo.save(e);}
+ @PutMapping("/{id}") @PreAuthorize("hasRole('ADMIN')") public Tienda actualizar(@PathVariable Long id,@Valid @RequestBody Tienda r){var e=obtener(id);e.setNombre(r.getNombre());if(r.getSucursal()==null||r.getSucursal().getId()==null)throw new IllegalArgumentException("Selecciona Sucursal");e.setSucursal(sucursalRepo.findById(r.getSucursal().getId()).filter(x->x.isActivo()).orElseThrow(()->new IllegalArgumentException("Sucursal no existe o está inactivo")));return repo.save(e);}
+ @DeleteMapping("/{id}") @PreAuthorize("hasRole('ADMIN')") public void eliminar(@PathVariable Long id){repo.delete(obtener(id));repo.flush();}
+}

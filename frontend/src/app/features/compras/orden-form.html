@@ -1,0 +1,169 @@
+<div class="page-title">
+  <div>
+    <span class="eyebrow">ABASTECIMIENTO</span>
+    <h1>Nueva orden de compra</h1>
+    <p class="muted">Elige un proveedor y el maíz que necesitas comprar.</p>
+  </div>
+  <a routerLink="/compras" class="ghost">← Volver a órdenes</a>
+</div>
+@if(error()){
+<div class="alert error" role="alert">{{error()}}</div>
+} @if(cargando()){
+<p role="status">Cargando proveedores y catálogo…</p>
+}
+<form [formGroup]="form" (ngSubmit)="revisar()">
+  <div class="order-grid">
+    <div>
+      <section class="card">
+        <h2>1. Datos de la compra</h2>
+        <label
+          >Proveedor activo<select formControlName="proveedorId">
+            <option [ngValue]="null">Selecciona un proveedor</option>
+            @for(p of proveedores();track p.id){
+            <option [ngValue]="p.id">
+              {{p.nombreORazonSocial}} · {{p.numeroDocumento}}
+            </option>
+            }
+          </select></label
+        ><label
+          >Condiciones pactadas <small class="muted">(opcional)</small
+          ><textarea
+            rows="2"
+            formControlName="condicionesPactadas"
+            maxlength="255"
+            placeholder="Entrega, pago o indicaciones para el proveedor"
+          ></textarea>
+        </label>
+      </section>
+      <section class="card">
+        <div class="section-title">
+          <h2>2. Detalle del pedido</h2>
+          <button
+            type="button"
+            class="secondary"
+            (click)="agregar()"
+            [disabled]="ocupado()"
+          >
+            ＋ Agregar línea
+          </button>
+        </div>
+        <div formArrayName="detalles">
+          @for(fila of filas.controls;track fila;let i=$index){
+          <div class="order-line" [formGroupName]="i">
+            <div class="line-title">
+              <b>Artículo {{i+1}}</b
+              ><button
+                type="button"
+                class="danger-link"
+                (click)="quitar(i)"
+                [disabled]="filas.length===1||ocupado()"
+              >
+                Quitar
+              </button>
+            </div>
+            <mat-form-field appearance="outline" class="article-search"
+              ><mat-label>Buscar maíz</mat-label
+              ><input
+                matInput
+                formControlName="busqueda"
+                [matAutocomplete]="opcionesMaiz"
+                placeholder="Escribe una variedad o descripción"
+              /><mat-autocomplete
+                #opcionesMaiz="matAutocomplete"
+                (optionSelected)="seleccionar(i,$event.option.value)"
+                >@for(a of opciones(i);track a.id){<mat-option [value]="a.id"
+                  >{{a.descripcion}} · {{a.precioUnitario|currency:'PEN':'S/ '}}
+                  </mat-option
+                >}</mat-autocomplete
+              >@if(fila.controls.articuloId.invalid&&fila.touched){<mat-error
+                >Elige un artículo de la lista.</mat-error
+              >}</mat-form-field
+            >
+            <div class="line-values">
+              <label
+                >Cantidad de unidades<input
+                  type="number"
+                  min="1"
+                  step="1"
+                  max="1000000"
+                  formControlName="cantidad"
+                  [attr.aria-label]="'Cantidad de unidades, línea '+(i+1)"
+              /></label>
+              <div>
+                <span class="muted small">Precio por unidad</span
+                ><strong
+                  >{{(articulo(i)?.precioUnitario||0)|currency:'PEN':'S/
+                  '}}</strong
+                >
+              </div>
+              <div class="right">
+                <span class="muted small">Subtotal</span
+                ><strong>{{subtotal(i)|currency:'PEN':'S/ '}}</strong>
+              </div>
+            </div>
+            <p class="stock-note">El inventario se actualiza al aceptar la recepción y se consulta por lote en el módulo Inventario.</p>
+          </div>
+          }
+        </div>
+      </section>
+    </div>
+    <aside class="card order-summary">
+      <span class="eyebrow">RESUMEN</span>
+      <h2>Tu compra</h2>
+      <dl>
+        <div>
+          <dt>Líneas</dt>
+          <dd>{{filas.length}}</dd>
+        </div>
+        <div>
+          <dt>Unidades solicitadas</dt>
+          <dd>{{unidades()}}</dd>
+        </div>
+      </dl>
+      <div class="total-label">Total previsto</div>
+      <div class="grand-total">{{total()|currency:'PEN':'S/ '}}</div>
+      <p class="muted small">
+        El servidor confirma precios y total al guardar. Emitir la orden no
+        aumenta el stock.
+      </p>
+      <button class="primary wide" [disabled]="ocupado()||cargando()">
+        Revisar orden →
+      </button>
+    </aside>
+  </div>
+</form>
+@if(confirmando()){
+<div class="modal-backdrop">
+  <section
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirmar-title"
+  >
+    <span class="eyebrow">CONFIRMACIÓN</span>
+    <h2 id="confirmar-title">¿Emitir esta orden?</h2>
+    <p>Proveedor: <b>{{proveedor()?.nombreORazonSocial}}</b></p>
+    <ul class="confirmation-lines">
+      @for(l of lineas();track $index){
+      <li>{{articulo($index)?.descripcion}} <b>{{l.cantidad}} {{l.cantidad === 1 ? 'unidad' : 'unidades'}}</b></li>
+      }
+    </ul>
+    <p>Total previsto: <b>{{total()|currency:'PEN':'S/ '}}</b></p>
+    <p class="muted small">
+      La orden quedará EMITIDA. Un supervisor confirmará la recepción cuando
+      llegue al almacén.
+    </p>
+    <div class="actions">
+      <button
+        class="ghost"
+        (click)="confirmando.set(false)"
+        [disabled]="ocupado()"
+      >
+        Seguir editando</button
+      ><button class="primary" (click)="guardar()" [disabled]="ocupado()">
+        {{ocupado()?'Guardando…':'Emitir orden'}}
+      </button>
+    </div>
+  </section>
+</div>
+}

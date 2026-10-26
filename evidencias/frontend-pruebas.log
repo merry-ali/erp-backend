@@ -1,0 +1,22 @@
+
+> logistica-maiz-frontend@0.0.0 test
+> ng test --watch=false
+
+> Building...
+√ Building...
+Application bundle generation complete. [5.543 seconds] - 2026-10-19T16:54:24.133Z
+
+
+ RUN  v4.1.12 C:/Users/Lenovo/Documents/Codex/2026-10-19/hol/outputs/erp-integrado-u2/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+   Start at  11:54:25
+   Duration  8.54s (transform 289ms, setup 2.86s, import 1.54s, tests 331ms, environment 8.26s)
+
+npm notice
+npm notice New major version of npm available! 11.13.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

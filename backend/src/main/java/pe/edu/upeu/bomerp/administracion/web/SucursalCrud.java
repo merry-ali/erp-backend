@@ -1,0 +1,10 @@
+package pe.edu.upeu.bomerp.administracion.web;
+import pe.edu.upeu.bomerp.administracion.model.*;import pe.edu.upeu.bomerp.administracion.repository.*;import org.springframework.web.bind.annotation.*;import org.springframework.transaction.annotation.Transactional;import org.springframework.security.access.prepost.PreAuthorize;import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;import java.util.*;
+@RestController @RequestMapping("/api/gestion/sucursales") @RequiredArgsConstructor @Transactional public class SucursalCrud {
+ private final SucursalRepository repo;private final EmpresaRepository empresaRepo;
+ @GetMapping public List<Sucursal> listar(){return repo.findAll();}
+ @GetMapping("/{id}") public Sucursal obtener(@PathVariable Long id){return repo.findById(id).orElseThrow(()->new IllegalArgumentException("Registro no encontrado"));}
+ @PostMapping @PreAuthorize("hasRole('ADMIN')") public Sucursal crear(@Valid @RequestBody Sucursal r){var e=new Sucursal();e.setNombre(r.getNombre());e.setDireccion(r.getDireccion());if(r.getEmpresa()==null||r.getEmpresa().getId()==null)throw new IllegalArgumentException("Selecciona Empresa");e.setEmpresa(empresaRepo.findById(r.getEmpresa().getId()).filter(x->x.isActivo()).orElseThrow(()->new IllegalArgumentException("Empresa no existe o está inactivo")));return repo.save(e);}
+ @PutMapping("/{id}") @PreAuthorize("hasRole('ADMIN')") public Sucursal actualizar(@PathVariable Long id,@Valid @RequestBody Sucursal r){var e=obtener(id);e.setNombre(r.getNombre());e.setDireccion(r.getDireccion());if(r.getEmpresa()==null||r.getEmpresa().getId()==null)throw new IllegalArgumentException("Selecciona Empresa");e.setEmpresa(empresaRepo.findById(r.getEmpresa().getId()).filter(x->x.isActivo()).orElseThrow(()->new IllegalArgumentException("Empresa no existe o está inactivo")));return repo.save(e);}
+ @DeleteMapping("/{id}") @PreAuthorize("hasRole('ADMIN')") public void eliminar(@PathVariable Long id){repo.delete(obtener(id));repo.flush();}
+}

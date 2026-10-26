@@ -1,0 +1,136 @@
+<div class="page-title">
+  <div>
+    <span class="eyebrow">COMPRAS</span>
+    <h1>Órdenes de compra</h1>
+    <p class="muted">Consulta el detalle y controla la llegada del maíz.</p>
+  </div>
+  @if(auth.es('COMPRADOR','ADMIN')){<a
+    class="primary"
+    routerLink="/compras/nueva"
+    >＋ Nueva orden</a
+  >}
+</div>
+@if(error()){
+<div class="alert error" role="alert">{{error()}}</div>
+}@if(exito()){
+<div class="alert success" role="status">{{exito()}}</div>
+}
+<div class="stats three">
+  <article>
+    <span>Órdenes listadas</span><strong>{{ordenes().length}}</strong>
+  </article>
+  <article>
+    <span>Importe de las órdenes listadas</span
+    ><strong>{{monto()|currency:'PEN':'S/ '}}</strong>
+  </article>
+  <article>
+    <span>Promedio por orden</span
+    ><strong>{{promedio()|currency:'PEN':'S/ '}}</strong>
+  </article>
+</div>
+<form class="card filters" [formGroup]="filtros" (ngSubmit)="buscar()">
+  <label
+    >Estado<select formControlName="estado">
+      <option value="">Todos</option>
+      <option>EMITIDA</option>
+      <option>RECIBIDA</option>
+      <option>ANULADA</option>
+    </select></label
+  ><label
+    >Proveedor<select formControlName="proveedorId">
+      <option value="">Todos</option>
+      @for(p of proveedores();track p.id){
+      <option [value]="p.id">{{p.nombreORazonSocial}}</option>
+      }
+    </select></label
+  ><label>Desde<input type="date" formControlName="inicio" /></label
+  ><label>Hasta<input type="date" formControlName="fin" /></label
+  ><button class="primary">Filtrar</button
+  ><button type="button" class="ghost" (click)="limpiar()">Limpiar</button>
+</form>
+@if(cargando()){
+<p role="status">Consultando órdenes…</p>
+} @for(o of ordenes();track o.id){
+<article class="card purchase-card">
+  <header>
+    <div>
+      <span class="eyebrow">ORDEN #{{o.id}}</span>
+      <h2>{{o.nombreProveedor}}</h2>
+      <p class="muted small">
+        {{o.fecha|date:'dd/MM/yyyy HH:mm'}} · Documento
+        {{o.numeroDocumentoProveedor}}
+      </p>
+    </div>
+    <div class="right">
+      <span class="badge" [class]="'badge '+o.estado.toLowerCase()"
+        >{{o.estado}}</span
+      ><strong class="purchase-total">{{o.total|currency:'PEN':'S/ '}}</strong>
+    </div>
+  </header>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Artículo</th>
+          <th>Cantidad</th>
+          <th>Precio por unidad</th>
+          <th class="right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for(d of o.detalles;track d.id){
+        <tr>
+          <td>{{d.descripcionArticulo}}</td>
+          <td>{{d.cantidad}} {{d.cantidad === 1 ? 'unidad' : 'unidades'}}</td>
+          <td>{{d.precioUnitario|currency:'PEN':'S/ '}}</td>
+          <td class="right">{{d.subtotal|currency:'PEN':'S/ '}}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="purchase-bottom">
+    <p class="muted small">
+      {{o.condicionesPactadas||'Sin condiciones adicionales.'}}
+    </p>
+    @if(o.estado==='EMITIDA'&&auth.es('ADMIN')){
+    <div class="actions">
+      <button class="danger-link" (click)="confirmar(o,'anular')">
+        Anular orden</button
+      ><a class="button" routerLink="/inventario">Recepcionar en Inventario</a>
+    </div>
+    }@if(o.estado==='RECIBIDA'){<span class="muted small"
+      >Inventario actualizado. La recepción no puede repetirse.</span
+    >}
+  </div>
+</article>
+}@empty{@if(!cargando()){
+<div class="card empty">No hay órdenes con esos filtros.</div>
+}} @if(cambio();as c){
+<div class="modal-backdrop">
+  <section
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cambio-title"
+  >
+    <span class="eyebrow">ORDEN #{{c.orden.id}}</span>
+    <h2 id="cambio-title">
+      {{c.accion==='recibir'?'Confirmar recepción':'Anular orden'}}
+    </h2>
+    <p>Proveedor: <b>{{c.orden.nombreProveedor}}</b></p>
+    <p>
+      {{c.accion==='recibir'?'Los unidades de esta orden se sumarán al inventario
+      una sola vez. Confirma que la entrega llegó al almacén.':'La orden quedará
+      anulada y no se recibirán sus artículos. El stock actual no cambia.'}}
+    </p>
+    <div class="actions">
+      <button class="ghost" (click)="cambio.set(null)" [disabled]="ocupado()">
+        Cancelar</button
+      ><button class="primary" (click)="ejecutar()" [disabled]="ocupado()">
+        {{ocupado()?'Procesando…':'Confirmar'}}
+      </button>
+    </div>
+  </section>
+</div>
+}

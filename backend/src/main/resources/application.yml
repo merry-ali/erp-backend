@@ -1,0 +1,26 @@
+spring:
+  config:
+    import: optional:file:./application-local.yml
+  application:
+    name: erp-integrado-u2
+  datasource:
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1522/FREEPDB1}
+    username: ${DB_USER:bomerp}
+    password: ${DB_PASSWORD:bomerp_local_2026}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: bomerp
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/maiz-erp}
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/maiz-erp/protocol/openid-connect/certs}
+server:
+  port: 8080
+consulta-documento:
+  base-url: ${API_PERU_BASE_URL:https://api.apiperu.pe}
+  token: ${API_PERU_TOKEN:}

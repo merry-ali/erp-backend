@@ -1,0 +1,10 @@
+# Solo diagnóstico local: no sustituye la integración Oracle de la evaluación.
+spring:
+  datasource:
+    url: jdbc:h2:mem:preview;MODE=Oracle;DB_CLOSE_DELAY=-1;INIT=CREATE SCHEMA IF NOT EXISTS bomerp
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

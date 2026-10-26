@@ -1,0 +1,2 @@
+package pe.edu.upeu.bomerp.produccion.service;
+@org.springframework.stereotype.Component @lombok.RequiredArgsConstructor public class InventarioAdapter implements DisponibilidadInventarioPort {private final pe.edu.upeu.bomerp.inventario.service.InventarioService inventario; public java.math.BigDecimal consultarDisponible(Long almacenId,String codigo){return inventario.consultarDisponible(almacenId,codigo);}}

@@ -1,0 +1,8 @@
+package pe.edu.upeu.bomerp;
+import org.springframework.web.bind.annotation.*;import org.springframework.http.*;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.dao.*;import java.util.*;
+@RestControllerAdvice public class ApiErrors {
+ @ExceptionHandler({IllegalArgumentException.class,MethodArgumentNotValidException.class,org.springframework.http.converter.HttpMessageNotReadableException.class}) ResponseEntity<?> bad(Exception e){String m=e instanceof MethodArgumentNotValidException v?v.getBindingResult().getFieldErrors().stream().map(f->f.getField()+": "+f.getDefaultMessage()).reduce((x,y)->x+"; "+y).orElse("Datos inválidos"):e.getMessage();return ResponseEntity.badRequest().body(Map.of("message",m==null?"Datos inválidos":m));}
+ @ExceptionHandler({IllegalStateException.class,DataIntegrityViolationException.class,OptimisticLockingFailureException.class}) ResponseEntity<?> conflict(Exception e){return ResponseEntity.status(409).body(Map.of("message",e instanceof DataIntegrityViolationException?"El registro está duplicado o tiene relaciones activas":e instanceof OptimisticLockingFailureException?"Otro usuario modificó el registro. Actualiza e intenta de nuevo.":e.getMessage()));}
+ @ExceptionHandler(pe.edu.upeu.bomerp.exception.ResourceNotFoundException.class) ResponseEntity<?> missing(Exception e){return ResponseEntity.status(404).body(Map.of("message",e.getMessage()));}
+ @ExceptionHandler({pe.edu.upeu.bomerp.exception.ProveedorInvalidoException.class,pe.edu.upeu.bomerp.exception.DocumentoDuplicadoException.class,pe.edu.upeu.bomerp.exception.EstadoOrdenException.class}) ResponseEntity<?> rule(Exception e){return ResponseEntity.status(409).body(Map.of("message",e.getMessage()));}
+}

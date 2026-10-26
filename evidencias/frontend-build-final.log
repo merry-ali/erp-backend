@@ -1,0 +1,35 @@
+
+> logistica-maiz-frontend@0.0.0 build
+> ng build
+
+> Building...
+√ Building...
+Initial chunk files | Names          |  Raw size | Estimated transfer size
+chunk-CN3UGCnL.js   | -              | 206.73 kB |                60.18 kB
+main-N2IC4GHC.js    | main           | 100.92 kB |                26.07 kB
+styles-GFLIAWBM.css | styles         |  24.25 kB |                 4.95 kB
+
+                    | Initial total  | 331.89 kB |                91.20 kB
+
+Lazy chunk files    | Names          |  Raw size | Estimated transfer size
+chunk-CMT4VOJF.js   | orden-form     | 183.61 kB |                37.44 kB
+chunk-DHy07RUa.js   | -              |  56.04 kB |                11.51 kB
+chunk-BQ2WMAfb.js   | produccion     |  11.03 kB |                 3.06 kB
+chunk-DdyEaG0f.js   | orden-reporte  |   8.52 kB |                 3.14 kB
+chunk-yDMoGZ6Z.js   | proveedores    |   7.71 kB |                 2.67 kB
+chunk-BB7EXMi-.js   | inventario     |   7.66 kB |                 2.45 kB
+chunk-B4DdsYE7.js   | ventas         |   7.62 kB |                 2.62 kB
+chunk-BrMsdBsN.js   | administracion |   5.64 kB |                 1.98 kB
+chunk-DNtg8cd-.js   | formula        |   4.24 kB |                 1.70 kB
+chunk-D2f5DVSh.js   | crud-list      |   4.18 kB |                 1.69 kB
+chunk-B0nBmM_G.js   | crud-form      |   4.16 kB |                 1.75 kB
+chunk-C8SNjZxJ.js   | reportes       |   3.91 kB |                 1.63 kB
+chunk-Chw1ipGb.js   | portal         |   3.84 kB |                 1.56 kB
+chunk-yB_P9chN.js   | inicio         |   2.14 kB |                 1.09 kB
+chunk-CbN3uc5z.js   | -              | 840 bytes |               840 bytes
+...and 1 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [16.453 seconds] - 2026-10-19T20:54:45.565Z
+
+Output location: C:\Users\Lenovo\Documents\Codex\2026-10-19\hol\outputs\erp-integrado-u2\frontend\dist\maiz
+

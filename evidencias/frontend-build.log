@@ -1,0 +1,40 @@
+
+> logistica-maiz-frontend@0.0.0 build
+> ng build
+
+> Building...
+√ Building...
+Initial chunk files | Names          |  Raw size | Estimated transfer size
+chunk-CN3UGCnL.js   | -              | 206.73 kB |                60.18 kB
+main-I53F6BVC.js    | main           | 100.57 kB |                25.97 kB
+styles-GFLIAWBM.css | styles         |  24.25 kB |                 4.95 kB
+
+                    | Initial total  | 331.54 kB |                91.11 kB
+
+Lazy chunk files    | Names          |  Raw size | Estimated transfer size
+chunk-BeD85hOq.js   | orden-form     | 183.86 kB |                37.45 kB
+chunk-DHy07RUa.js   | -              |  56.04 kB |                11.51 kB
+chunk-DmNCFTOk.js   | produccion     |  11.03 kB |                 3.06 kB
+chunk-ivpe_i9p.js   | orden-reporte  |   8.52 kB |                 3.14 kB
+chunk-BOQkxwI1.js   | proveedores    |   7.71 kB |                 2.67 kB
+chunk-CO-SsUTO.js   | ventas         |   7.62 kB |                 2.62 kB
+chunk-CRH11kzi.js   | inventario     |   6.64 kB |                 2.17 kB
+chunk-CfQVKTC5.js   | administracion |   5.64 kB |                 1.98 kB
+chunk-BjRBuVN4.js   | formula        |   4.24 kB |                 1.70 kB
+chunk-jpnPg9Zj.js   | crud-form      |   4.11 kB |                 1.72 kB
+chunk-HG3aaf6t.js   | crud-list      |   4.10 kB |                 1.67 kB
+chunk-C8SNjZxJ.js   | reportes       |   3.91 kB |                 1.63 kB
+chunk-uqZowxtI.js   | portal         |   3.84 kB |                 1.56 kB
+chunk-BRpUh-tU.js   | inicio         |   2.14 kB |                 1.08 kB
+chunk-CbN3uc5z.js   | -              | 840 bytes |               840 bytes
+...and 1 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [13.852 seconds] - 2026-10-19T16:51:52.562Z
+
+Output location: C:\Users\Lenovo\Documents\Codex\2026-10-19\hol\outputs\erp-integrado-u2\frontend\dist\maiz
+
+npm notice
+npm notice New major version of npm available! 11.13.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

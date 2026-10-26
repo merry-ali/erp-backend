@@ -1,0 +1,80 @@
+<span class="eyebrow">ÁREA COMERCIAL</span>
+<div class="page-title"><div><h1>{{tituloSeccion()}}</h1><p class="muted">{{descripcionSeccion()}}</p></div></div>
+@if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+@if(aviso()){<p class="alert success" role="status">{{aviso()}}</p>}
+
+@if(seccion()==='cotizaciones'){
+  <section class="card">
+    <h2>Nueva cotización para cliente registrado</h2>
+    <form [formGroup]="cotizacionForm" (ngSubmit)="guardarCotizacion()">
+      <div class="form-grid">
+        <label>Buscar cliente por nombre o documento
+          <input [value]="busquedaCliente()" (input)="busquedaCliente.set($any($event.target).value)" placeholder="Nombre, DNI o RUC">
+          <select formControlName="clienteId"><option [ngValue]="null">Seleccionar cliente</option>@for(c of clientesFiltrados();track c.id){<option [ngValue]="c.id">{{c.nombreORazonSocial}} · {{c.numeroDocumento}}</option>}</select>
+        </label>
+        <label>Almacén para convertir luego en pedido
+          <select [ngModel]="almacenMostrador" [ngModelOptions]="{standalone:true}" (ngModelChange)="cambiarAlmacenMostrador($event)"><option [ngValue]="null">Seleccionar almacén</option>@for(a of almacenes();track a.id){<option [ngValue]="a.id">{{a.nombre}}</option>}</select>
+        </label>
+      </div>
+      <div formArrayName="detalles">
+        @for(f of filasCotizacion.controls;track f;let i=$index){<div [formGroupName]="i" class="line-row sales-line">
+          <label>Producto<select formControlName="codigoArticulo" (change)="seleccionarArticulo(i,'cotizacion')"><option value="">Elegir artículo</option>@for(a of articulos();track a.id){<option [value]="a.codigo">{{a.nombre}} · {{a.codigo}}</option>}</select></label>
+          <label>Cantidad<input type="number" min="0.0001" step="0.0001" formControlName="cantidad"></label>
+          <label>Precio unitario<input type="number" min="0.01" step="0.01" formControlName="precio"></label>
+          <label>Descuento %<input type="number" min="0" max="100" step="0.01" formControlName="descuento"></label>
+          <button type="button" (click)="quitar(i,'cotizacion')">Quitar</button>
+          @if(precioSinConfigurar(f.get('codigoArticulo')?.value)){<span class="field-error">Configura el precio de venta del artículo.</span>}
+        </div>}
+      </div>
+      <div class="actions"><button type="button" (click)="agregarCotizacion()">＋ Línea</button><strong>Total: {{total('cotizacion')|currency:'PEN':'S/ '}}</strong><button class="primary" [disabled]="ocupado()">Guardar cotización</button></div>
+      <p class="muted">La cotización no reserva stock. Al aceptarla se convierte en pedido y Ventas verifica disponibilidad con Inventario.</p>
+    </form>
+  </section>
+
+  <section class="card"><div class="section-title"><h2>Cotizaciones</h2></div><div class="table-wrap"><table><thead><tr><th>N.º</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Total</th><th>Detalle</th><th>Acciones</th></tr></thead><tbody>
+    @for(c of cotizaciones();track c.id){<tr><td>#C-{{c.id}}</td><td>{{c.fecha|date:'dd/MM/yyyy HH:mm'}}</td><td>{{nombreCliente(c.clienteId)}}</td><td><span class="badge">{{c.estado}}</span></td><td>{{c.total|currency:'PEN':'S/ '}}</td><td>@for(d of c.detalles;track d.id){<span class="badge">{{d.codigoArticulo}} × {{d.cantidad}}</span>}</td><td class="sales-actions">
+      @if(c.estado==='BORRADOR'){<button (click)="enviarCotizacion(c.id,'enviar')" [disabled]="ocupado()">Marcar enviada</button>}
+      @if(c.estado==='ENVIADA'){<button (click)="enviarCotizacion(c.id,'aceptar')" [disabled]="ocupado()">Aceptar</button><button (click)="enviarCotizacion(c.id,'rechazar')" [disabled]="ocupado()">Rechazar</button>}
+      @if(c.estado==='ACEPTADA'&&!c.pedidoVentaId){<button (click)="convertirCotizacion(c)" [disabled]="ocupado()">Crear pedido</button>}
+    </td></tr>}@empty{<tr><td colspan="7" class="empty">Aún no hay cotizaciones.</td></tr>}
+  </tbody></table></div></section>
+}
+
+@if(seccion()==='pedidos'){
+  <section class="card"><h2>Pedidos de venta</h2><form [formGroup]="form" (ngSubmit)="guardarPedido()">
+    <div class="form-grid"><label>Cliente<select formControlName="clienteId"><option [ngValue]="null">Seleccionar cliente</option>@for(c of clientesFiltrados();track c.id){<option [ngValue]="c.id">{{c.nombreORazonSocial}} · {{c.numeroDocumento}}</option>}</select></label><label>Almacén<select formControlName="almacenId"><option [ngValue]="null">Seleccionar almacén</option>@for(a of almacenes();track a.id){<option [ngValue]="a.id">{{a.nombre}}</option>}</select></label></div>
+    <div formArrayName="detalles">@for(f of filas.controls;track f;let i=$index){<div [formGroupName]="i" class="line-row sales-line"><label>Producto<select formControlName="codigoArticulo" (change)="seleccionarArticulo(i)"><option value="">Elegir artículo</option>@for(a of articulos();track a.id){<option [value]="a.codigo">{{a.nombre}} · {{a.codigo}}</option>}</select></label><label>Cantidad<input type="number" min="0.0001" step="0.0001" formControlName="cantidad"></label><label>Precio unitario<input type="number" min="0.01" step="0.01" formControlName="precio"></label><label>Descuento %<input type="number" min="0" max="100" step="0.01" formControlName="descuento"></label><button type="button" (click)="quitar(i)">Quitar</button><strong>Subtotal {{subtotal(f.getRawValue())|currency:'PEN':'S/ '}}</strong></div>}</div>
+    <div class="actions"><button type="button" (click)="agregar()">＋ Línea</button><strong>Total: {{total()|currency:'PEN':'S/ '}}</strong><button class="primary" [disabled]="ocupado()">Guardar pedido</button></div>
+    <p class="muted">El pedido queda en borrador; el stock se confirma al aprobar y se descuenta al despachar.</p>
+  </form></section>
+}
+
+@if(seccion()==='rapida'){
+  <section class="card"><div class="section-title"><div><h2>Venta rápida de mostrador</h2><p class="muted">Registra al cliente por DNI y entrega la compra en una sola operación.</p></div></div>
+    <div class="form-grid"><label>Almacén de productos terminados<select [ngModel]="almacenMostrador" [ngModelOptions]="{standalone:true}" (ngModelChange)="cambiarAlmacenMostrador($event)"><option [ngValue]="null">Seleccionar almacén</option>@for(a of almacenes();track a.id){<option [ngValue]="a.id">{{a.nombre}}</option>}</select></label><div class="quick-client"><label>DNI del cliente<input [(ngModel)]="dni" [ngModelOptions]="{standalone:true}" inputmode="numeric" maxlength="8" placeholder="8 dígitos"></label><button type="button" (click)="consultarDni()" [disabled]="dniConsultando()">{{dniConsultando()?'Consultando…':'Consultar DNI'}}</button></div></div>
+    <label>Nombre del cliente<input [ngModel]="nombreDni()" (ngModelChange)="nombreDni.set($event)" [ngModelOptions]="{standalone:true}" placeholder="Se completa desde la consulta; puedes corregirlo"></label>
+    @if(clienteDniId()){<p class="alert success">Cliente existente encontrado. Se usará su ficha guardada.</p>}
+    <label>Buscar producto<input [value]="busquedaArticulo()" (input)="busquedaArticulo.set($any($event.target).value)" placeholder="Nombre o código"></label>
+    <div class="pos-products">@for(a of articulosFiltrados();track a.id){<button type="button" (click)="agregarProductoRapido(a)"><strong>{{a.nombre}}</strong><span>{{a.codigo}}</span><b>{{a.precioVenta|currency:'PEN':'S/ '}}</b><small>{{stockRapido(a.codigo)}}</small></button>}</div>
+    <form [formGroup]="rapido" (ngSubmit)="completarClienteYVender()"><div formArrayName="detalles"><h3>Carrito</h3>
+      @for(f of filasRapidas.controls;track f;let i=$index){<div [formGroupName]="i" class="line-row sales-line"><label>Producto<select formControlName="codigoArticulo" (change)="seleccionarArticulo(i,'rapida')"><option value="">Elegir producto</option>@for(a of articulos();track a.id){<option [value]="a.codigo">{{a.nombre}} · {{a.codigo}}</option>}</select></label><label>Cantidad<input type="number" min="0.0001" step="0.0001" formControlName="cantidad"></label><label>Precio<input type="number" min="0.01" step="0.01" formControlName="precio"></label><label>Descuento %<input type="number" min="0" max="100" step="0.01" formControlName="descuento"></label><button type="button" (click)="quitar(i,'rapida')">Quitar</button><strong>{{subtotal(f.getRawValue())|currency:'PEN':'S/ '}}</strong></div>}
+    </div><div class="actions"><button type="button" (click)="agregarRapida()">＋ Línea</button><strong>Total: {{total('rapida')|currency:'PEN':'S/ '}}</strong><button class="primary" [disabled]="ocupado()">{{ocupado()?'Registrando…':'Completar venta'}}</button></div></form>
+    <p class="muted">Al completar, el sistema valida el stock, registra el despacho de mostrador y guarda la venta. Se genera un comprobante interno imprimible.</p>
+  </section>
+}
+
+@if(seccion()==='historial'){
+  <section class="stats three"><article><span>Operaciones en el periodo</span><strong>{{reporte().pedidos||0}}</strong></article><article><span>Total despachado</span><strong>{{reporte().totalDespachado|currency:'PEN':'S/ '}}</strong></article><article><span>Total neto después de reversiones</span><strong>{{reporte().totalNeto|currency:'PEN':'S/ '}}</strong></article></section>
+  <section class="card"><h2>Reporte de ventas</h2><div class="report-filters"><label>Desde<input type="date" [(ngModel)]="desde"></label><label>Hasta<input type="date" [(ngModel)]="hasta"></label><button class="primary" (click)="cargarReporte()">Actualizar reporte</button></div><p class="muted">Despachadas: {{reporte().despachados||0}} · Devueltas: {{reporte().devueltos||0}} · Anuladas: {{reporte().anulados||0}}. No representa cobros recibidos.</p><h3>Resumen por producto</h3><div class="table-wrap"><table><thead><tr><th>Artículo</th><th>Unidades</th><th>Importe bruto</th><th>Devuelto</th><th>Neto</th></tr></thead><tbody>@for(x of reporte().porProducto||[];track x.codigoArticulo){<tr><td>{{x.codigoArticulo}}</td><td>{{x.unidades}}</td><td>{{x.totalBruto|currency:'PEN':'S/ '}}</td><td>{{x.totalDevuelto|currency:'PEN':'S/ '}}</td><td>{{x.totalNeto|currency:'PEN':'S/ '}}</td></tr>}@empty{<tr><td colspan="5" class="empty">No hay ventas despachadas en el periodo.</td></tr>}</tbody></table></div></section>
+  <section class="card"><h2>Registro de ventas y pedidos</h2><div class="report-filters"><label>Buscar<input [value]="busquedaHistorial()" (input)="busquedaHistorial.set($any($event.target).value)" placeholder="N.º, cliente o producto"></label><label>Estado<select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)"><option value="">Todos</option><option value="BORRADOR">Borrador</option><option value="APROBADO">Aprobado</option><option value="DESPACHADO">Despachado</option><option value="DEVUELTO">Devuelto</option><option value="ANULADO">Anulado</option></select></label></div>
+    <div class="table-wrap"><table><thead><tr><th>N.º</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Total</th><th>Detalle</th><th>Acciones</th></tr></thead><tbody>
+      @for(p of pedidosFiltrados();track p.id){<tr><td>#{{p.id}}</td><td>{{p.fecha|date:'dd/MM/yyyy HH:mm'}}</td><td>{{nombreCliente(p.clienteId)}}</td><td><span class="badge" [class.status-approved]="p.estado==='APROBADO'" [class.status-dispatched]="p.estado==='DESPACHADO'" [class.status-cancelled]="p.estado==='ANULADO'||p.estado==='DEVUELTO'">{{estadoPedido(p.estado)}}</span></td><td>{{p.total|currency:'PEN':'S/ '}}</td><td>@for(d of p.detalles;track d.id){<span class="badge">{{d.codigoArticulo}} × {{d.cantidad}}</span>}</td><td class="sales-actions"><button (click)="verDetalle(p)">Detalle</button><button (click)="imprimir(p)">Imprimir</button>@if(p.estado==='BORRADOR'){<button (click)="post('/api/ventas/pedidos/'+p.id+'/aprobar',{},'Pedido aprobado.')" [disabled]="ocupado()">Aprobar</button>}@if(p.estado==='APROBADO'&&auth.puede('INVENTARIO')){<button (click)="post('/api/ventas/pedidos/'+p.id+'/entregar',{vehiculo},'Despacho confirmado.')" [disabled]="ocupado()">Despachar</button>}@if((p.estado==='BORRADOR'||p.estado==='APROBADO')&&auth.es('ADMIN')){<button class="danger-link" (click)="cancelarPedido(p)" [disabled]="ocupado()">Anular</button>}@if(p.estado==='DESPACHADO'&&auth.es('ADMIN')){<button class="danger-link" (click)="revertirVenta(p)" [disabled]="ocupado()">Devolver venta</button>}</td></tr>}
+      @empty{<tr><td colspan="7" class="empty">No hay operaciones que coincidan.</td></tr>}
+    </tbody></table></div>
+    @if(auth.puede('INVENTARIO')){<label>Placa para pedidos de entrega<input [(ngModel)]="vehiculo" placeholder="ABC-123"></label>}
+  </section>
+  @if(detalleActual();as d){<section class="card"><div class="section-title"><h2>Detalle de la operación #{{d.id}}</h2><button class="ghost" (click)="detalleActual.set(null)">Cerrar detalle</button></div><p><b>Cliente:</b> {{nombreCliente(d.clienteId)}} · {{documentoCliente(d.clienteId)}}<br><b>Fecha:</b> {{d.fecha|date:'dd/MM/yyyy HH:mm'}}<br><b>Almacén:</b> {{nombreAlmacen(d.almacenId)}}<br><b>Estado:</b> {{estadoPedido(d.estado)}}<br><b>Vehículo:</b> {{d.vehiculo||'Venta de mostrador / sin vehículo'}}</p><div class="table-wrap"><table><thead><tr><th>Artículo</th><th>Cantidad</th><th>Precio unitario</th><th>Descuento</th><th>Subtotal</th></tr></thead><tbody>@for(linea of d.detalles;track linea.id){<tr><td>{{linea.codigoArticulo}}</td><td>{{linea.cantidad}}</td><td>{{linea.precio|currency:'PEN':'S/ '}}</td><td>{{linea.descuento}}%</td><td>{{linea.subtotal|currency:'PEN':'S/ '}}</td></tr>}</tbody></table></div><p><b>Total:</b> {{d.total|currency:'PEN':'S/ '}}</p>@if(d.motivoAnulacion){<p><b>Motivo de anulación:</b> {{d.motivoAnulacion}}</p>}@if(d.motivoReversion){<p><b>Motivo de devolución:</b> {{d.motivoReversion}}</p>}<div class="actions"><button class="primary" (click)="imprimir(d)">Imprimir detalle</button></div></section>}
+}
+
+@if(ticketActual();as t){<section class="card ticket-card"><div class="receipt" id="ticket"><span class="eyebrow">MAÍZ ERP · DOCUMENTO INTERNO</span><h2>{{t.estado==='DEVUELTO'?'Constancia de devolución':t.estado==='DESPACHADO'?'Comprobante interno de venta':'Pedido de venta'}}</h2><p>Operación #{{t.id}} · {{estadoPedido(t.estado)}}<br>{{t.fecha|date:'dd/MM/yyyy HH:mm'}}</p><hr><p>Cliente: {{t.clienteNombre||nombreCliente(t.clienteId)}}<br>Documento: {{t.clienteDocumento||documentoCliente(t.clienteId)}}</p>@for(d of t.detalles;track d.id){<div class="receipt-row"><span>{{d.codigoArticulo}} × {{d.cantidad}}</span><strong>{{d.subtotal|currency:'PEN':'S/ '}}</strong></div>}<div class="receipt-row"><strong>Total</strong><strong>{{t.total|currency:'PEN':'S/ '}}</strong></div><p class="muted">Documento interno. No es comprobante fiscal.</p></div><div class="actions"><button class="ghost" (click)="cerrarTicket()">Cerrar</button><button class="primary" (click)="imprimir(t)">Imprimir</button></div></section>}
+

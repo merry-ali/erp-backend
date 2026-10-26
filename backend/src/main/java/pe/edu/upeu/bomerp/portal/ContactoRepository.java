@@ -1,0 +1,1 @@
+package pe.edu.upeu.bomerp.portal; public interface ContactoRepository extends org.springframework.data.jpa.repository.JpaRepository<Contacto,Long>{}

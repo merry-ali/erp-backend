@@ -1,0 +1,51 @@
+Acceso denegado.
+11:57:05.373 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [pe.edu.upeu.bomerp.IntegracionTest]: IntegracionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+11:57:05.926 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration pe.edu.upeu.bomerp.BomerpBackendApplication for test class pe.edu.upeu.bomerp.IntegracionTest
+11:57:06.255 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [pe.edu.upeu.bomerp.IntegracionTest]: IntegracionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+11:57:06.266 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration pe.edu.upeu.bomerp.BomerpBackendApplication for test class pe.edu.upeu.bomerp.IntegracionTest
+11:57:06.624 [main] INFO org.springframework.boot.devtools.restart.RestartApplicationListener -- Restart disabled due to context in which it is running
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.7)
+
+2026-10-19T11:57:07.613-05:00  INFO 30176 --- [erp-integrado-u2] [           main] pe.edu.upeu.bomerp.IntegracionTest       : Starting IntegracionTest using Java 21.0.12.1 with PID 30176 (started by Lenovo in C:\Users\Lenovo\Documents\Codex\2026-10-19\hol\outputs\erp-integrado-u2\backend)
+2026-10-19T11:57:07.616-05:00  INFO 30176 --- [erp-integrado-u2] [           main] pe.edu.upeu.bomerp.IntegracionTest       : The following 1 profile is active: "test"
+2026-10-19T11:57:11.494-05:00  INFO 30176 --- [erp-integrado-u2] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-19T11:57:11.944-05:00  INFO 30176 --- [erp-integrado-u2] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 430 ms. Found 20 JPA repository interfaces.
+2026-10-19T11:57:13.660-05:00  INFO 30176 --- [erp-integrado-u2] [         task-1] com.tngtech.archunit.core.PluginLoader   : Detected Java version 21.0.12.1
+2026-10-19T11:57:19.866-05:00  INFO 30176 --- [erp-integrado-u2] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-10-19T11:57:20.056-05:00  INFO 30176 --- [erp-integrado-u2] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.19.Final
+2026-10-19T11:57:21.437-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-19T11:57:21.553-05:00  INFO 30176 --- [erp-integrado-u2] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-19T11:57:22.281-05:00  INFO 30176 --- [erp-integrado-u2] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:erp user=SA
+2026-10-19T11:57:22.287-05:00  INFO 30176 --- [erp-integrado-u2] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-19T11:57:22.432-05:00  INFO 30176 --- [erp-integrado-u2] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:erp]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: ERP/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-10-19T11:57:26.360-05:00  INFO 30176 --- [erp-integrado-u2] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-19T11:57:26.739-05:00  INFO 30176 --- [erp-integrado-u2] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-19T11:57:26.970-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-19T11:57:31.585-05:00  WARN 30176 --- [erp-integrado-u2] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-19T11:57:34.541-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-19T11:57:34.542-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-19T11:57:34.575-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-10-19T11:57:34.594-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 51 ms
+2026-10-19T11:57:35.144-05:00  INFO 30176 --- [erp-integrado-u2] [           main] o.s.s.config.TaskSchedulerRouter         : No TaskScheduler/ScheduledExecutorService bean found for scheduled processing
+2026-10-19T11:57:35.156-05:00  INFO 30176 --- [erp-integrado-u2] [           main] pe.edu.upeu.bomerp.IntegracionTest       : Started IntegracionTest in 28.56 seconds (process running for 32.746)
+2026-10-19T11:57:35.571-05:00  WARN 30176 --- [erp-integrado-u2] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-10-19T11:57:35.571-05:00  WARN 30176 --- [erp-integrado-u2] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'

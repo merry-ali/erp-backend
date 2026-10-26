@@ -1,0 +1,1 @@
+package pe.edu.upeu.bomerp.articulo.repository; public interface CategoriaRepository extends org.springframework.data.jpa.repository.JpaRepository<pe.edu.upeu.bomerp.articulo.model.Categoria,Long>{}
