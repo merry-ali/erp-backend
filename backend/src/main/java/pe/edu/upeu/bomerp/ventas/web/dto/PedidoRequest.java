@@ -14,7 +14,14 @@ import jakarta.validation.constraints.Positive;
 public record PedidoRequest(
         @NotNull @Positive Long clienteId,
         @NotNull @Positive Long almacenId,
-        @NotEmpty List<@Valid Linea> detalles) {
+        @NotEmpty List<@Valid Linea> detalles,
+        String tipoEntrega,
+        String vehiculo,
+        String formaPagoReal) {
+
+    public PedidoRequest(Long clienteId, Long almacenId, List<Linea> detalles) {
+        this(clienteId, almacenId, detalles, null, null, null);
+    }
 
     public record Linea(
             @NotBlank String codigoArticulo,

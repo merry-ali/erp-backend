@@ -69,6 +69,10 @@ public class MovimientoInventario {
     @Column(name = "vehiculo_placa", length = 15)
     private String vehiculoPlaca;
 
+    /** Modalidad de entrega: VEHICULO o LOCAL. */
+    @Column(name = "tipo_entrega", length = 20)
+    private String tipoEntrega;
+
     /** Solo RECEPCION: control de calidad de la mercancia recibida. */
     @Column(name = "pesaje_kg", precision = 12, scale = 4)
     private BigDecimal pesajeKg;

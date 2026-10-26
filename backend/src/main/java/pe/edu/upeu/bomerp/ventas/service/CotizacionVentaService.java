@@ -37,6 +37,8 @@ public class CotizacionVentaService {
 
         CotizacionVenta cotizacion = new CotizacionVenta();
         cotizacion.setClienteId(request.clienteId());
+        cotizacion.setFormaPago(request.formaPago());
+        cotizacion.setPlazoPago(request.plazoPago());
 
         BigDecimal total = BigDecimal.ZERO;
         for (CrearCotizacionRequest.Linea linea : request.detalles()) {
@@ -100,7 +102,12 @@ public class CotizacionVentaService {
         pedido.setCotizacionVentaId(cotizacion.getId());
         pedido.setMoneda(cotizacion.getMoneda());
         pedido.setTotal(cotizacion.getTotal());
+        pedido.setFormaPagoOfrecida(cotizacion.getFormaPago());
+        pedido.setPlazoPagoOfrecido(cotizacion.getPlazoPago());
         pedido.setOperadorSub(usuario);
+        pedido.setTipoEntrega(request.tipoEntrega() == null ? null : request.tipoEntrega().trim().toUpperCase());
+        pedido.setVehiculo("VEHICULO".equals(pedido.getTipoEntrega()) && request.vehiculo() != null
+                ? request.vehiculo().trim().toUpperCase() : null);
 
         for (DetalleCotizacionVenta linea : cotizacion.getDetalles()) {
             DetallePedido detalle = new DetallePedido();

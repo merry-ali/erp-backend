@@ -111,6 +111,14 @@ public class InventarioService {
     public MovimientoInventario registrarDespacho(Long almacenId, Long pedidoVentaId,
                                                     String vehiculoPlaca, String observaciones,
                                                     List<DetalleMovimiento> detalles) {
+        return registrarDespacho(almacenId, pedidoVentaId,
+                vehiculoPlaca == null || vehiculoPlaca.isBlank() ? "LOCAL" : "VEHICULO",
+                vehiculoPlaca, observaciones, detalles);
+    }
+
+    public MovimientoInventario registrarDespacho(Long almacenId, Long pedidoVentaId,
+                                                    String tipoEntrega, String vehiculoPlaca,
+                                                    String observaciones, List<DetalleMovimiento> detalles) {
         for (DetalleMovimiento detalle : detalles) {
             if (detalle.getLoteId() == null) {
                 throw new IllegalArgumentException("Todo detalle de despacho debe especificar un lote");
@@ -125,6 +133,7 @@ public class InventarioService {
         movimiento.setTipoMovimiento(MovimientoInventario.TipoMovimiento.DESPACHO);
         movimiento.setAlmacenId(almacenId);
         movimiento.setPedidoVentaId(pedidoVentaId);
+        movimiento.setTipoEntrega(tipoEntrega);
         movimiento.setVehiculoPlaca(vehiculoPlaca);
         movimiento.setObservaciones(observaciones);
         detalles.forEach(movimiento::agregarDetalle);
@@ -220,6 +229,14 @@ public class InventarioService {
     @Transactional(readOnly = true)
     public List<MovimientoInventario> listar(MovimientoInventario.TipoMovimiento tipo) {
         return tipo == null ? movimientoRepository.findAll() : movimientoRepository.findByTipoMovimiento(tipo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimientoInventario> listarMovimientosPedido(Long pedidoVentaId) {
+        return movimientoRepository.findByPedidoVentaId(pedidoVentaId).stream()
+                .filter(m -> m.getTipoMovimiento() == MovimientoInventario.TipoMovimiento.DESPACHO
+                        || m.getTipoMovimiento() == MovimientoInventario.TipoMovimiento.DEVOLUCION)
+                .toList();
     }
 
     @Transactional(readOnly = true)

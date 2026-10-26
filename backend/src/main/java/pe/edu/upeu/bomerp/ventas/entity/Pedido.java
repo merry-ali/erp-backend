@@ -41,10 +41,21 @@ public class Pedido {
 
     private String operadorSub;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = true)
+    private Boolean ventaRapida = false;
+
+    private LocalDateTime fechaEmisionVoucher;
+
+    @Column(length = 150)
+    private String usuarioEmisionVoucher;
+
+    @Column(length = 20)
     private String estado = "BORRADOR";
 
     private String vehiculo;
+
+    @Column(length = 20)
+    private String tipoEntrega;
 
     @Column(length = 300)
     private String motivoAnulacion;
@@ -57,10 +68,30 @@ public class Pedido {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
 
+    @Column(length = 20)
+    private String estadoPago = "PENDIENTE";
+
+    @Column(precision = 14, scale = 2)
+    private BigDecimal montoPagado = BigDecimal.ZERO;
+
+    @Column(length = 30)
+    private String formaPagoReal;
+
+    @Column(length = 30)
+    private String formaPagoOfrecida;
+
+    @Column(length = 30)
+    private String plazoPagoOfrecido;
+
+    private LocalDateTime fechaUltimoPago;
+
     @Column(nullable = false, length = 3)
     private String moneda = "PEN";
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PagoPedido> pagos = new ArrayList<>();
 
 }

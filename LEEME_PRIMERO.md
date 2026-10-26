@@ -59,6 +59,8 @@ npm.cmd start
 
 6. Abre http://localhost:4200 y selecciona **Acceso del personal**.
 
+El portal público y el acceso del personal tienen una presentación propia. La pantalla de credenciales conserva la autenticación PKCE de Keycloak y usa el tema `maiz` desde `infra/keycloak-themes`. Si el realm `maiz-erp` ya existía antes de este cambio, abre la consola de Keycloak en http://localhost:8180, entra al realm **maiz-erp**, ve a **Realm settings → Themes → Login theme**, selecciona **maiz** y guarda. En una instalación nueva, la opción viene definida en el archivo de importación del realm.
+
 Requisitos: JDK 21, Maven, Node compatible con Angular 22 y Docker Desktop. La máquina utilizada para desarrollar tenía Node 26.1 y npm 11.13. No se incluyen `node_modules` ni archivos compilados; se reconstruyen con esos comandos.
 
 ## Accesos locales de demostración

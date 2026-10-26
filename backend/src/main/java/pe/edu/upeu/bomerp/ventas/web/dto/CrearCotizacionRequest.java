@@ -13,6 +13,8 @@ import jakarta.validation.constraints.Positive;
 
 public record CrearCotizacionRequest(
         @NotNull @Positive Long clienteId,
+        @jakarta.validation.constraints.Size(max = 30) String formaPago,
+        @jakarta.validation.constraints.Size(max = 30) String plazoPago,
         @NotEmpty List<@Valid Linea> detalles) {
 
     public record Linea(

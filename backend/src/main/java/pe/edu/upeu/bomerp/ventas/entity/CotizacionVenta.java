@@ -42,6 +42,12 @@ public class CotizacionVenta {
     @Column(nullable = false, length = 3)
     private String moneda = "PEN";
 
+    @Column(length = 30)
+    private String formaPago;
+
+    @Column(length = 30)
+    private String plazoPago;
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
 

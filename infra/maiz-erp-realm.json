@@ -2,6 +2,7 @@
   "realm": "maiz-erp",
   "enabled": true,
   "displayName": "Sistema de Producción y Comercialización",
+  "loginTheme": "maiz",
   "sslRequired": "external",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,
@@ -158,5 +159,11 @@
         "VENDEDOR"
       ]
     }
-  ]
+  ],
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "es",
+    "en"
+  ],
+  "defaultLocale": "es"
 }

@@ -1,0 +1,33 @@
+<span class="eyebrow">ÁREA COMERCIAL · PEDIDOS</span>
+<div class="page-title"><div><h1>Detalle y pagos del pedido</h1><p class="muted">Consulta los pagos recibidos y el saldo pendiente.</p></div><button type="button" (click)="volver()">Volver a pedidos</button></div>
+
+@if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+@if(aviso()){<p class="alert success" role="status">{{aviso()}}</p>}
+@if(cargando()){<section class="card"><p>Cargando el pedido…</p></section>}
+@if(pedido();as p){
+  <section class="card">
+    <div class="section-title"><div><h2>Pedido #{{p.id}}</h2><p class="muted">{{p.cotizacionVentaId?'Creado desde la cotización #C-'+p.cotizacionVentaId:'Pedido directo'}}</p></div><span class="badge">{{p.estado}}</span></div>
+    <div class="stats three"><article><span>Cliente</span><strong>{{nombreCliente(p.clienteId)}}</strong></article><article><span>Estado del pago</span><strong>{{estadoPago(p)}}</strong></article><article><span>Total del pedido</span><strong>{{p.total|currency:'PEN':'S/ '}}</strong></article></div>
+    <p><b>Fecha del pedido:</b> {{p.fecha|date:'dd/MM/yyyy HH:mm'}} · <b>Almacén:</b> {{p.almacenId}}</p>
+    @if(p.formaPagoOfrecida||p.plazoPagoOfrecido){<p><b>Condición ofrecida en la cotización:</b> {{nombreFormaPago(p.formaPagoOfrecida)}} · {{plazoPago(p.plazoPagoOfrecido)}}</p>}
+    <div class="table-wrap"><table><thead><tr><th>Artículo</th><th>Cantidad</th><th>Precio unitario</th><th>Descuento</th><th>Importe</th></tr></thead><tbody>@for(d of p.detalles||[];track d.id){<tr><td>{{d.codigoArticulo}}</td><td>{{d.cantidad}}</td><td>{{d.precio|currency:'PEN':'S/ '}}</td><td>{{d.descuento}}%</td><td>{{d.subtotal|currency:'PEN':'S/ '}}</td></tr>}</tbody></table></div>
+  </section>
+
+  <section class="card"><h2>Resumen del pago</h2><div class="stats three"><article><span>Total</span><strong>{{p.total|currency:'PEN':'S/ '}}</strong></article><article><span>Pagado</span><strong>{{(p.montoPagado||0)|currency:'PEN':'S/ '}}</strong></article><article><span>Saldo pendiente</span><strong>{{(p.total-(p.montoPagado||0))|currency:'PEN':'S/ '}}</strong></article></div>
+    <p class="muted">El pedido o el despacho no confirman un cobro. Registra un pago solo después de verificar que recibiste el dinero.</p>
+    @if((p.total-(p.montoPagado||0))>0&&p.estado!=='ANULADO'&&p.estado!=='DEVUELTO'){
+      <h3>Registrar pago recibido</h3><div class="form-grid">
+        <label>Monto recibido<input type="number" min="0.01" [max]="saldoPendiente(p)" step="0.01" [ngModel]="monto" (ngModelChange)="actualizarMonto($event,p)"></label>
+        <label>Método de pago<select [(ngModel)]="formaPago"><option value="EFECTIVO">Efectivo</option><option value="TRANSFERENCIA">Transferencia bancaria</option><option value="YAPE_PLIN">Yape o Plin</option><option value="TARJETA">Tarjeta</option><option value="OTRO">Otro</option></select></label>
+        <label>Referencia / N.º de operación<input [(ngModel)]="referencia" placeholder="Código del voucher (opcional)"></label>
+      </div>
+      @if(esPagoIncompleto(p)){<label class="checks"><input type="checkbox" [(ngModel)]="confirmarPagoIncompleto">Confirmo que el cliente no pagó el saldo completo; registraré este monto como abono.</label>}
+      <button type="button" class="primary" (click)="registrarPago()" [disabled]="ocupado()||(esPagoIncompleto(p)&&!confirmarPagoIncompleto)">{{ocupado()?'Guardando…':'Confirmar pago recibido'}}</button>
+    }
+  </section>
+
+  <section class="card"><h2>Historial de pagos</h2><p class="muted">Cada fila es un pago que el personal registró después de verificar el cobro.</p><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Método</th><th>Referencia</th><th>Monto</th></tr></thead><tbody>
+    @for(pago of pagosPagina(p);track pago.id){<tr><td>{{pago.fecha|date:'dd/MM/yyyy HH:mm'}}</td><td>{{pago.formaPago}}</td><td>{{pago.referencia||'—'}}</td><td>{{pago.monto|currency:'PEN':'S/ '}}</td></tr>}
+    @empty{<tr><td colspan="4" class="empty">Aún no hay pagos registrados para este pedido.</td></tr>}
+  </tbody></table></div>@if((p.pagos||[]).length>0){<div class="actions"><span class="muted">{{(p.pagos||[]).length}} pagos · Página {{paginaPagos()+1}} de {{paginasPagos(p)}}</span><button type="button" (click)="paginaAnteriorPago()" [disabled]="paginaPagos()===0">Anterior</button><button type="button" (click)="paginaSiguientePago(p)" [disabled]="paginaPagos()+1>=paginasPagos(p)">Siguiente</button></div>}</section>
+}
