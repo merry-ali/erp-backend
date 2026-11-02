@@ -27,6 +27,10 @@ public record PedidoRequest(
             @NotBlank String codigoArticulo,
             @NotNull @Positive BigDecimal cantidad,
             @NotNull @DecimalMin("0") BigDecimal precio,
-            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal descuento) {
+            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal descuento,
+            Long almacenId) {
+        public Linea(String codigoArticulo, BigDecimal cantidad, BigDecimal precio, BigDecimal descuento) {
+            this(codigoArticulo, cantidad, precio, descuento, null);
+        }
     }
 }

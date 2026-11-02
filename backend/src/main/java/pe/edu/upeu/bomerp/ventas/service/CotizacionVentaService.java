@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import pe.edu.upeu.bomerp.articulo.model.Articulo;
 import pe.edu.upeu.bomerp.articulo.service.ArticuloService;
+import pe.edu.upeu.bomerp.administracion.model.Almacen;
+import pe.edu.upeu.bomerp.administracion.repository.AlmacenRepository;
 import pe.edu.upeu.bomerp.personas.persona.entity.RolPersona;
 import pe.edu.upeu.bomerp.personas.persona.service.PersonaService;
 import pe.edu.upeu.bomerp.exception.ResourceNotFoundException;
@@ -31,6 +33,7 @@ public class CotizacionVentaService {
     private final PedidoRepository pedidos;
     private final PersonaService personas;
     private final ArticuloService articulos;
+    private final AlmacenRepository almacenes;
 
     public CotizacionVenta crear(CrearCotizacionRequest request) {
         validarCliente(request.clienteId());
@@ -42,12 +45,14 @@ public class CotizacionVentaService {
 
         BigDecimal total = BigDecimal.ZERO;
         for (CrearCotizacionRequest.Linea linea : request.detalles()) {
-            validarProductoVendible(linea.codigoArticulo());
+            var articulo = validarProductoVendible(linea.codigoArticulo());
+            Long almacenId = resolverAlmacen(linea.almacenId(), articulo);
 
             DetalleCotizacionVenta detalle = new DetalleCotizacionVenta();
             detalle.setCotizacion(cotizacion);
             detalle.setNumeroLinea(cotizacion.getDetalles().size() + 1);
             detalle.setCodigoArticulo(linea.codigoArticulo());
+            detalle.setAlmacenId(almacenId);
             detalle.setCantidad(linea.cantidad());
             detalle.setPrecioUnitario(linea.precioUnitario());
             detalle.setDescuento(linea.descuento());
@@ -98,22 +103,28 @@ public class CotizacionVentaService {
 
         Pedido pedido = new Pedido();
         pedido.setClienteId(cotizacion.getClienteId());
-        pedido.setAlmacenId(request.almacenId());
+        pedido.setAlmacenId(cotizacion.getDetalles().stream().map(DetalleCotizacionVenta::getAlmacenId)
+                .filter(java.util.Objects::nonNull).findFirst().orElse(request.almacenId()));
         pedido.setCotizacionVentaId(cotizacion.getId());
         pedido.setMoneda(cotizacion.getMoneda());
         pedido.setTotal(cotizacion.getTotal());
         pedido.setFormaPagoOfrecida(cotizacion.getFormaPago());
         pedido.setPlazoPagoOfrecido(cotizacion.getPlazoPago());
         pedido.setOperadorSub(usuario);
-        pedido.setTipoEntrega(request.tipoEntrega() == null ? null : request.tipoEntrega().trim().toUpperCase());
-        pedido.setVehiculo("VEHICULO".equals(pedido.getTipoEntrega()) && request.vehiculo() != null
-                ? request.vehiculo().trim().toUpperCase() : null);
+        String modalidad = request.tipoEntrega() == null || request.tipoEntrega().isBlank()
+                ? "LOCAL" : request.tipoEntrega().trim().toUpperCase();
+        if (!"LOCAL".equals(modalidad) || (request.vehiculo() != null && !request.vehiculo().isBlank())) {
+            throw new IllegalArgumentException("Los pedidos se entregan en el mismo local y no requieren vehículo");
+        }
+        pedido.setTipoEntrega("LOCAL");
+        pedido.setVehiculo(null);
 
         for (DetalleCotizacionVenta linea : cotizacion.getDetalles()) {
             DetallePedido detalle = new DetallePedido();
             detalle.setPedido(pedido);
             detalle.setNumeroLinea(linea.getNumeroLinea());
             detalle.setCodigoArticulo(linea.getCodigoArticulo());
+            detalle.setAlmacenId(linea.getAlmacenId() == null ? request.almacenId() : linea.getAlmacenId());
             detalle.setCantidad(linea.getCantidad());
             detalle.setPrecio(linea.getPrecioUnitario());
             detalle.setDescuento(linea.getDescuento());
@@ -147,11 +158,35 @@ public class CotizacionVentaService {
         }
     }
 
-    private void validarProductoVendible(String codigoArticulo) {
+    private Articulo validarProductoVendible(String codigoArticulo) {
         Articulo articulo = articulos.obtenerPorCodigo(codigoArticulo);
-        if (articulo.getTipoArticulo() != Articulo.TipoArticulo.PRODUCTO_TERMINADO) {
-            throw new IllegalArgumentException("Solo se pueden cotizar productos terminados");
+        if (!articulo.isActivo() || (articulo.getTipoArticulo() != Articulo.TipoArticulo.PRODUCTO_TERMINADO
+                && articulo.getTipoArticulo() != Articulo.TipoArticulo.MATERIA_PRIMA)) {
+            throw new IllegalArgumentException("Solo se pueden cotizar materias primas y productos terminados activos");
         }
+        return articulo;
+    }
+
+    private Long resolverAlmacen(Long solicitado, Articulo articulo) {
+        Almacen.TipoAlmacen tipo = articulo.getTipoArticulo() == Articulo.TipoArticulo.MATERIA_PRIMA
+                ? Almacen.TipoAlmacen.MATERIA_PRIMA : Almacen.TipoAlmacen.PRODUCTO_TERMINADO;
+        Long id = solicitado;
+        if (id == null) {
+            var opciones = almacenes.findByTipoAndActivoTrue(tipo);
+            if (opciones.isEmpty()) opciones = almacenes.findByTipoAndActivoTrue(Almacen.TipoAlmacen.GENERAL);
+            if (opciones.size() != 1) {
+                throw new IllegalArgumentException("Selecciona el almacén de " + tipo.name().toLowerCase().replace('_', ' ')
+                        + " para el artículo " + articulo.getCodigo());
+            }
+            id = opciones.get(0).getId();
+        }
+        Almacen almacen = almacenes.findById(id).filter(Almacen::isActivo)
+                .orElseThrow(() -> new IllegalArgumentException("El almacén seleccionado no existe o está inactivo"));
+        if (almacen.getTipo() != tipo && almacen.getTipo() != Almacen.TipoAlmacen.GENERAL) {
+            throw new IllegalArgumentException("El artículo " + articulo.getCodigo() + " requiere un almacén "
+                    + tipo.name().toLowerCase().replace('_', ' '));
+        }
+        return id;
     }
 
     private BigDecimal calcularSubtotal(BigDecimal cantidad, BigDecimal precio, BigDecimal descuento) {

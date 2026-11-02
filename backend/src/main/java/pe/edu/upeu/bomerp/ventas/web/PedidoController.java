@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import pe.edu.upeu.bomerp.ventas.entity.Pedido;
 import pe.edu.upeu.bomerp.ventas.service.PedidoService;
 import pe.edu.upeu.bomerp.ventas.web.dto.PedidoRequest;
+import pe.edu.upeu.bomerp.ventas.web.dto.EntregaPedidoRequest;
 import pe.edu.upeu.bomerp.ventas.web.dto.MotivoRequest;
 import pe.edu.upeu.bomerp.inventario.service.InventarioService;
 
@@ -65,10 +66,8 @@ public class PedidoController {
     }
     @PostMapping("/{id}/entregar") 
     @PreAuthorize("@acceso.permite(authentication,'INVENTARIO')") 
-    public Pedido entregar(@PathVariable Long id,@RequestBody Map<String,String> r){
-        String tipoEntrega = r.get("tipoEntrega");
-        if (tipoEntrega == null) tipoEntrega = r.get("vehiculo") == null || r.get("vehiculo").isBlank() ? "LOCAL" : "VEHICULO";
-        return service.entregar(id, tipoEntrega, r.get("vehiculo"));
+    public Pedido entregar(@PathVariable Long id, @Valid @RequestBody EntregaPedidoRequest request){
+        return service.entregarSeleccion(id, request);
     }
 
     @PostMapping("/{id}/pagos")

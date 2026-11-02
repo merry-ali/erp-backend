@@ -1,1 +1,435 @@
-<span class="eyebrow">ALMACÉN</span><h1>Inventario y recepción</h1>@if(error()){<p class="alert error">{{error()}}</p>}<form class="card form-grid" (ngSubmit)="registrar()"><h2 class="full">Registrar recepción de compra</h2><label>Orden de compra<select name="compra" [(ngModel)]="compraId" required><option [ngValue]="0">Seleccionar</option>@for(c of compras();track c.id){<option [ngValue]="c.id">#{{c.id}} · {{c.nombreProveedor}}</option>}</select></label><label>Almacén<select name="almacen" [(ngModel)]="almacenId" required><option [ngValue]="0">Seleccionar</option>@for(a of almacenes();track a.id){<option [ngValue]="a.id">{{a.nombre}}</option>}</select></label><label>Pesaje real (kg)<input name="pesaje" type="number" [(ngModel)]="pesajeKg" min="0.01" step="0.01"></label><label>Humedad (%)<input name="humedad" type="number" [(ngModel)]="humedadPct" min="0" max="100"></label><label>Impurezas (%)<input name="impurezas" type="number" [(ngModel)]="impurezaPct" min="0" max="100"></label><div class="full">@for(d of detalles();track d.id){<p>{{d.descripcionArticulo}} · {{d.cantidad}} unidades</p>}</div><button class="primary" [disabled]="ocupado()||!compraId||!almacenId">Registrar control de calidad</button></form><section class="card"><h2>Movimientos</h2><table><thead><tr><th>ID</th><th>Tipo</th><th>Estado</th><th>Control de calidad</th></tr></thead><tbody>@for(m of movimientos();track m.id){<tr><td>{{m.id}}</td><td>{{m.tipoMovimiento}}</td><td>{{m.estado}}</td><td>@if(m.tipoMovimiento==='RECEPCION'&&m.estado==='BORRADOR'){<button [disabled]="ocupado()" (click)="confirmar(m.id,true)">Aceptar e ingresar stock</button><button [disabled]="ocupado()" (click)="confirmar(m.id,false)">Rechazar</button>}@else{<span>{{m.aceptado===false?'Rechazado':''}}</span>}</td></tr>}</tbody></table></section><section class="card"><h2>Existencias por lote</h2><table><thead><tr><th>Lote</th><th>Artículo</th><th>Almacén</th><th>Inicial</th><th>Disponible</th><th>Estado</th></tr></thead><tbody>@for(l of lotes();track l.id){<tr><td>{{l.id}}</td><td>{{l.codigoArticulo}}</td><td>{{l.almacenId}}</td><td>{{l.cantidadInicial}}</td><td>{{l.cantidadDisponible}}</td><td>{{l.estado}}</td></tr>}@empty{<tr><td colspan="6">Confirma una recepción para generar existencias.</td></tr>}</tbody></table></section><section class="card"><h2>Pedidos pendientes de despacho</h2><p class="muted">Elige cómo se entregará cada pedido. Para despacho en vehículo, ingresa su placa.</p>@for(p of pedidos();track p.id){<div class="dispatch-order"><strong>Pedido #{{p.id}} · almacén {{p.almacenId}}</strong><label>Modalidad de entrega<select [ngModel]="tipoEntregaPedido(p.id)" (ngModelChange)="cambiarTipoEntrega(p.id,$event)"><option value="VEHICULO">Despacho en vehículo</option><option value="LOCAL">Entrega en el mismo local</option></select></label>@if(tipoEntregaPedido(p.id)==='VEHICULO'){<label>Placa del vehículo<input [ngModel]="placaPedido(p.id)" (ngModelChange)="vehiculoPorPedido[p.id]=$event" placeholder="ABC-123"></label>}<button class="primary" [disabled]="ocupado()||(tipoEntregaPedido(p.id)==='VEHICULO'&&!placaPedido(p.id).trim())" (click)="entregar(p)">Confirmar despacho / entrega</button></div>}@empty{<p>No hay pedidos aprobados pendientes.</p>}</section>
+<div class="inventory-heading">
+  <div>
+    <span class="eyebrow">OPERACIONES DE ALMACÉN</span>
+    <h1>Inventario</h1>
+    <p class="muted">
+      Controla lo que ingresa, lo que está disponible y lo que se entrega.
+    </p>
+  </div>
+  <button type="button" [disabled]="cargando()||ocupado()" (click)="cargar()">
+    Actualizar datos
+  </button>
+</div>
+<div class="inventory-summary" aria-label="Resumen de almacén">
+  <div>
+    <span>Por revisar</span><strong>{{pendientes().length}}</strong
+    ><small>Recepciones pendientes</small>
+  </div>
+  <div>
+    <span>Disponibles</span><strong>{{lotesActivos().length}}</strong
+    ><small>Lotes con existencias</small>
+  </div>
+  <div>
+    <span>Por entregar</span><strong>{{pedidos().length}}</strong
+    ><small>Pedidos aprobados por Ventas</small>
+  </div>
+</div>
+<div class="inventory-tabs" role="tablist" aria-label="Apartados de Inventario">
+  @for(a of apartados;track a.id){<button
+    type="button"
+    role="tab"
+    [id]="'tab-'+a.id"
+    [attr.aria-selected]="seccion()===a.id"
+    aria-controls="inventory-panel"
+    [class.active]="seccion()===a.id"
+    (click)="seccion.set(a.id)"
+  >
+    <strong>{{a.nombre}}</strong><small>{{a.detalle}}</small></button
+  >}
+</div>
+@if(error()){
+<p class="alert error" role="alert">{{error()}}</p>
+} @if(exito()){
+<p class="inventory-success" role="status">{{exito()}}</p>
+}
+<div
+  id="inventory-panel"
+  role="tabpanel"
+  [attr.aria-labelledby]="'tab-'+seccion()"
+>
+  @if(cargando()){
+  <p role="status" class="inventory-note">
+    Actualizando información del almacén…
+  </p>
+  } @switch(seccion()){ @case('recepciones'){
+  <div class="section-intro">
+    <h2>Recepciones de compras</h2>
+    <p class="muted">
+      Registra la llegada de mercancía y revisa su calidad antes de ingresarla
+      al almacén.
+    </p>
+  </div>
+  <ol class="inventory-steps">
+    <li>
+      <b>1. Selecciona la compra</b
+      ><span>Elige una orden emitida y el almacén de destino.</span>
+    </li>
+    <li>
+      <b>2. Registra la llegada</b
+      ><span>Ingresa pesaje, humedad e impurezas.</span>
+    </li>
+    <li>
+      <b>3. Revisa y confirma</b
+      ><span>Solo la aceptación genera lotes disponibles.</span>
+    </li>
+  </ol>
+  <form class="card form-grid" #recepcionForm="ngForm" (ngSubmit)="registrar()">
+    <h3 class="full">Registrar llegada de mercancía</h3>
+    <label
+      >Orden de compra<select name="compra" [ngModel]="compraId" (ngModelChange)="cambiarCompra($event)" required>
+        <option [ngValue]="0">Seleccionar compra pendiente</option>
+        @for(c of comprasDisponibles();track c.id){
+        <option [ngValue]="c.id">
+          Compra #{{c.id}} · {{c.nombreProveedor}}
+        </option>
+        }
+      </select></label
+    >
+    <label
+      >Almacén de destino<select
+        name="almacen"
+        [(ngModel)]="almacenId"
+        required
+      >
+        <option [ngValue]="0">Seleccionar almacén</option>
+        @for(a of almacenesCompatiblesRecepcion();track a.id){
+        <option [ngValue]="a.id">{{a.nombre}} · {{a.tipo}}</option>
+        }
+      </select></label
+    >
+    @if(compraId&&!almacenesCompatiblesRecepcion().length){<p class="full field-error">No hay un almacén compatible con los artículos de esta compra.</p>}
+    @if(compraMezclaTipos()){<p class="full inventory-note">La compra combina materias primas y productos terminados. Usa un almacén GENERAL para recibir todas sus líneas.</p>}
+    <label
+      >Pesaje real (kg)<input
+        name="pesaje"
+        type="number"
+        [(ngModel)]="pesajeKg"
+        required
+        min="0.01"
+        step="0.01"
+    /></label>
+    <label
+      >Humedad (%)<input
+        name="humedad"
+        type="number"
+        [(ngModel)]="humedadPct"
+        required
+        min="0"
+        max="100"
+        step="0.01"
+    /></label>
+    <label
+      >Impurezas (%)<input
+        name="impurezas"
+        type="number"
+        [(ngModel)]="impurezaPct"
+        required
+        min="0"
+        max="100"
+        step="0.01"
+    /></label>
+    @if(compraId){
+    <div class="full expected-lines">
+      <b>Artículos de la compra</b>@for(d of detalles();track d.id){
+      <p>
+        {{d.descripcionArticulo}}
+        <strong>{{cantidad(d.cantidad)}} {{unidadPorId(d.articuloId)}}</strong>
+      </p>
+      }
+    </div>
+    }
+    <p class="full inventory-note">
+      Registrar la llegada deja una recepción pendiente de revisión. Todavía no
+      aumenta las existencias.
+    </p>
+    <button
+      class="primary"
+      [disabled]="ocupado()||cargando()||!compraId||!almacenId||recepcionForm.invalid"
+    >
+      Registrar recepción pendiente
+    </button>
+  </form>
+  <section class="card">
+    <h3>Control de calidad y recepciones registradas</h3>
+    <p class="muted">
+      La aceptación o el rechazo los decide el responsable de almacén tras
+      revisar la mercancía.
+    </p>
+    @for(m of recepciones();track m.id){
+    <article class="receipt-item">
+      <div class="receipt-top">
+        <div>
+          <h4>
+            Recepción #{{m.id}}
+            <span class="muted">· Compra #{{m.ordenCompraId}}</span>
+          </h4>
+          <p class="muted">
+            {{almacen(m.almacenId)}} · {{fecha(m.fechaRegistro)}}
+          </p>
+        </div>
+        <span class="inventory-badge" [class]="'inventory-badge '+tono(m)"
+          >{{estado(m)}}</span
+        >
+      </div>
+      <div class="quality">
+        <span>Pesaje <b>{{cantidad(m.pesajeKg)}} kg</b></span
+        ><span>Humedad <b>{{cantidad(m.humedadPct)}} %</b></span
+        ><span>Impurezas <b>{{cantidad(m.impurezaPct)}} %</b></span>
+      </div>
+      <p class="receipt-lines">
+        @for(d of m.detalles;track d.id){<span
+          >{{articulo(d.codigoArticulo)}} · {{cantidad(d.cantidad)}}
+          {{d.unidadMedida}}</span
+        >}
+      </p>
+      @if(m.estado==='BORRADOR'){
+      <div class="receipt-actions">
+        <button
+          type="button"
+          class="primary"
+          [disabled]="ocupado()"
+          (click)="confirmar(m.id,true)"
+        >
+          Aceptar e ingresar al stock</button
+        ><button
+          type="button"
+          class="reject-button"
+          [disabled]="ocupado()"
+          (click)="confirmar(m.id,false)"
+        >
+          Rechazar recepción</button
+        ><small>No se generan lotes si se rechaza.</small>
+      </div>
+      }
+    </article>
+    }@empty{
+    <p class="inventory-empty">
+      Aún no hay recepciones. Empieza seleccionando una compra emitida.
+    </p>
+    }
+  </section>
+  } @case('existencias'){
+  <div class="section-intro">
+    <h2>Existencias y lotes</h2>
+    <p class="muted">
+      Consulta el saldo de cada lote y su ubicación. Cada artículo conserva su
+      propia unidad de medida.
+    </p>
+  </div>
+  <section class="card">
+    <div class="inventory-filters">
+      <label
+        >Buscar artículo o lote<input
+          [(ngModel)]="busqueda"
+          placeholder="Nombre, código o número de lote" /></label
+      ><label
+        >Almacén<select [(ngModel)]="filtroAlmacen">
+          <option value="">Todos los almacenes</option>
+          @for(a of almacenes();track a.id){
+          <option [value]="a.id">{{a.nombre}}</option>
+          }
+        </select></label
+      >
+    </div>
+    <div class="inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Lote</th>
+            <th>Artículo</th>
+            <th>Almacén</th>
+            <th>Cantidad inicial</th>
+            <th>Disponible</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(l of lotesFiltrados();track l.id){
+          <tr>
+            <td>#{{l.id}}</td>
+            <td>
+              <b>{{articulo(l.codigoArticulo)}}</b
+              ><small class="code-label">{{l.codigoArticulo}}</small>
+            </td>
+            <td>{{almacen(l.almacenId)}}</td>
+            <td>
+              {{cantidad(l.cantidadInicial)}} {{unidad(l.codigoArticulo)}}
+            </td>
+            <td>
+              <strong
+                >{{cantidad(l.cantidadDisponible)}}
+                {{unidad(l.codigoArticulo)}}</strong
+              >
+            </td>
+            <td>
+              <span
+                class="inventory-badge"
+                [class.aceptado]="l.estado==='DISPONIBLE'"
+                [class.pendiente]="l.estado!=='DISPONIBLE'"
+                >{{l.estado==='DISPONIBLE'?'Disponible':l.estado==='AGOTADO'?'Agotado':'Bloqueado'}}</span
+              >
+            </td>
+          </tr>
+          }@empty{
+          <tr>
+            <td colspan="6" class="inventory-empty">
+              No hay lotes con esos filtros. Acepta una recepción para ingresar
+              existencias.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  } @case('despachos'){
+  <div class="section-intro">
+    <h2>Despachos de ventas</h2>
+    <p class="muted">
+      Ventas registra y aprueba el pedido. Almacén selecciona los lotes y
+      confirma la entrega física.
+    </p>
+  </div>
+  <p class="inventory-note">
+    Confirmar una entrega descuenta las existencias y marca el pedido como
+    despachado.
+  </p>
+  @for(p of pedidos();track p.id){
+  <section class="card" [id]="'pedido-despacho-'+p.id" [class.dispatch-order-highlight]="pedidoDestinoId()===p.id">
+    <h3>Pedido #{{p.id}}</h3>
+    <p class="muted">Aprobado por Ventas · cada artículo conserva su almacén de origen.</p>
+    <h4>Selecciona de qué lotes saldrá la mercancía</h4>
+    @for(linea of lineasPedido(p);track linea.clave){
+    <div class="dispatch-line">
+      <div class="dispatch-line-heading">
+        <strong>{{articulo(linea.codigoArticulo)}}</strong>
+        <span>{{almacen(linea.almacenId)}}</span>
+        <span>Solicitado: {{cantidad(linea.cantidad)}} {{unidad(linea.codigoArticulo)}}</span>
+        <span>Por asignar: {{cantidad(cantidadPendiente(p,linea))}} {{unidad(linea.codigoArticulo)}}</span>
+      </div>
+    <div class="inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Artículo</th>
+            <th>Lote</th>
+            <th>Disponible</th>
+            <th>Cantidad a retirar</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(l of lotesPedido(p,linea);track l.id){
+          <tr>
+            <td>{{articulo(l.codigoArticulo)}}</td>
+            <td>#{{l.id}}</td>
+            <td>
+              {{cantidad(l.cantidadDisponible)}} {{unidad(l.codigoArticulo)}}
+            </td>
+            <td>
+              <input type="number" min="0" step="0.0001" [max]="l.cantidadDisponible"
+                [(ngModel)]="seleccion[p.id+':'+l.id]" [attr.aria-label]="'Cantidad del lote '+l.id" />
+            </td>
+          </tr>
+          }@empty{
+          <tr>
+            <td colspan="4">
+              No hay lotes disponibles para este artículo en {{almacen(linea.almacenId)}}.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    </div>
+    }
+    <div class="dispatch-footer">
+      <p class="dispatch-help">Modalidad: entrega en el mismo local. No requiere vehículo.</p>
+      <button type="button"
+        class="primary"
+        [disabled]="ocupado()||cargando()||!esSeleccionExacta(p)"
+        (click)="entregar(p)"
+      >
+        Confirmar entrega del pedido #{{p.id}}
+      </button>
+    </div>
+  </section>
+  }@empty{
+  <section class="card inventory-empty">
+    <h3>No hay pedidos pendientes de entrega</h3>
+    <p>
+      Cuando Ventas apruebe un pedido, aparecerá aquí para seleccionar sus lotes
+      y registrar el despacho.
+    </p>
+  </section>
+  } } @case('historial'){
+  <div class="section-intro">
+    <h2>Historial de movimientos</h2>
+    <p class="muted">
+      Revisa el origen, destino y resultado de las operaciones del almacén.
+    </p>
+  </div>
+  <section class="card">
+    <label class="history-filter"
+      >Tipo de movimiento<select [(ngModel)]="filtroTipo">
+        <option value="">Todos los movimientos</option>
+        <option value="RECEPCION">Recepciones de compras</option>
+        <option value="DESPACHO">Despachos de ventas</option>
+        <option value="DEVOLUCION">Devoluciones</option>
+      </select></label
+    >
+    <div class="inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Movimiento</th>
+            <th>Fecha</th>
+            <th>Documento de origen</th>
+            <th>Almacén</th>
+            <th>Resultado</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(m of historial();track m.id){
+          <tr>
+            <td>
+              <b>#{{m.id}}</b><small class="code-label">{{tipo(m)}}</small>
+            </td>
+            <td>{{fecha(m.fechaRegistro)}}</td>
+            <td>
+              {{m.ordenCompraId?'Compra #'+m.ordenCompraId:'Pedido
+              #'+m.pedidoVentaId}}
+            </td>
+            <td>{{almacen(m.almacenId)}}</td>
+            <td>
+              <span [class]="'inventory-badge '+tono(m)">{{estado(m)}}</span>
+            </td>
+            <td>
+              <details>
+                <summary>Ver artículos</summary>
+                @for(d of m.detalles;track d.id){
+                <p>
+                  {{articulo(d.codigoArticulo)}}: {{cantidad(d.cantidad)}}
+                  {{d.unidadMedida}} @if(d.loteId){· Lote #{{d.loteId}}}
+                </p>
+                }@if(m.tipoEntrega){
+                <p>Modalidad: {{m.tipoEntrega==='VEHICULO'?'Despacho en vehículo':'Entrega en el local'}}</p>
+                }@if(m.vehiculoPlaca){
+                <p>Vehículo: {{m.vehiculoPlaca}}</p>
+                }
+              </details>
+            </td>
+          </tr>
+          }@empty{
+          <tr>
+            <td colspan="6" class="inventory-empty">
+              No hay movimientos de este tipo.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  } }
+</div>

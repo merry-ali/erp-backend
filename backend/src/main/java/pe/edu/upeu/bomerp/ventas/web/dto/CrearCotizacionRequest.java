@@ -21,6 +21,10 @@ public record CrearCotizacionRequest(
             @NotBlank String codigoArticulo,
             @NotNull @Positive BigDecimal cantidad,
             @NotNull @DecimalMin("0") BigDecimal precioUnitario,
-            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal descuento) {
+            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal descuento,
+            Long almacenId) {
+        public Linea(String codigoArticulo, BigDecimal cantidad, BigDecimal precioUnitario, BigDecimal descuento) {
+            this(codigoArticulo, cantidad, precioUnitario, descuento, null);
+        }
     }
 }

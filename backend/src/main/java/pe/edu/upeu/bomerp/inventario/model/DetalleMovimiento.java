@@ -36,7 +36,13 @@ public class DetalleMovimiento {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private MovimientoInventario movimiento;
 
-    /** Referencia logica al modulo Catalogo de Articulos. */
+    /** El código conserva el contrato de la API; la asociación crea la FK física. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "codigo_articulo", referencedColumnName = "codigo", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_detmov_articulo"))
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private pe.edu.upeu.bomerp.articulo.model.Articulo articulo;
+
     @NotBlank
     @Column(name = "codigo_articulo", length = 30, nullable = false)
     private String codigoArticulo;

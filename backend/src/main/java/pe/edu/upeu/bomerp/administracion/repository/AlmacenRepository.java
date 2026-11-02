@@ -8,4 +8,5 @@ import java.util.List;
 public interface AlmacenRepository extends JpaRepository<Almacen, Long> {
     List<Almacen> findBySucursalId(Long sucursalId);
     List<Almacen> findByTipo(Almacen.TipoAlmacen tipo);
+    List<Almacen> findByTipoAndActivoTrue(Almacen.TipoAlmacen tipo);
 }

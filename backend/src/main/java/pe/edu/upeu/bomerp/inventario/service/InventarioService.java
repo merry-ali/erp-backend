@@ -8,6 +8,8 @@ import pe.edu.upeu.bomerp.inventario.model.Lote;
 import pe.edu.upeu.bomerp.inventario.model.MovimientoInventario;
 import pe.edu.upeu.bomerp.inventario.repository.LoteRepository;
 import pe.edu.upeu.bomerp.inventario.repository.MovimientoInventarioRepository;
+import pe.edu.upeu.bomerp.administracion.model.Almacen;
+import pe.edu.upeu.bomerp.administracion.repository.AlmacenRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,6 +33,7 @@ public class InventarioService {
     private final StockService stock;
     private final pe.edu.upeu.bomerp.compras.ordencompra.repository.OrdenCompraRepository compras;
     private final pe.edu.upeu.bomerp.articulo.service.ArticuloService articulos;
+    private final AlmacenRepository almacenes;
 
     // ---------------------------------------------------------------
     // Recepcion (entrada, ligada a una orden de compra)
@@ -47,8 +50,10 @@ public class InventarioService {
                                                      List<DetalleMovimiento> detalles) {
         var compra=compras.bloquear(ordenCompraId).orElseThrow(()->new IllegalArgumentException("Orden de compra inexistente"));
         if(compra.getEstado()!=pe.edu.upeu.bomerp.compras.ordencompra.entity.EstadoOrdenCompra.EMITIDA)throw new IllegalStateException("La compra no está EMITIDA");
+        Almacen almacen=almacenes.findById(almacenId).filter(Almacen::isActivo)
+                .orElseThrow(()->new IllegalArgumentException("El almacén no existe o está inactivo"));
         var esperado=new java.util.TreeMap<String,BigDecimal>();compra.getDetalles().forEach(d->esperado.merge(articulos.obtener(d.getArticuloId()).getCodigo(),BigDecimal.valueOf(d.getCantidad()),BigDecimal::add));
-        var recibido=new java.util.TreeMap<String,BigDecimal>();for(var d:detalles){stock.validar(almacenId,d.getCodigoArticulo(),d.getCantidad());if(!articulos.obtenerPorCodigo(d.getCodigoArticulo()).getUnidadMedida().getCodigo().equals(d.getUnidadMedida()))throw new IllegalArgumentException("Unidad incorrecta");recibido.merge(d.getCodigoArticulo(),d.getCantidad(),BigDecimal::add);}
+        var recibido=new java.util.TreeMap<String,BigDecimal>();for(var d:detalles){stock.validar(almacenId,d.getCodigoArticulo(),d.getCantidad());var articulo=articulos.obtenerPorCodigo(d.getCodigoArticulo());validarTipoAlmacen(almacen,articulo);if(!articulo.getUnidadMedida().getCodigo().equals(d.getUnidadMedida()))throw new IllegalArgumentException("Unidad incorrecta");recibido.merge(d.getCodigoArticulo(),d.getCantidad(),BigDecimal::add);}
         if(!esperado.keySet().equals(recibido.keySet())||esperado.entrySet().stream().anyMatch(e->e.getValue().compareTo(recibido.get(e.getKey()))!=0))throw new IllegalArgumentException("La recepción debe coincidir con las líneas de la compra; no se admiten recepciones parciales en esta versión");
         if(pesajeKg==null||pesajeKg.signum()<=0||humedadPct==null||humedadPct.signum()<0||humedadPct.compareTo(BigDecimal.valueOf(100))>0||impurezaPct==null||impurezaPct.signum()<0||impurezaPct.compareTo(BigDecimal.valueOf(100))>0)throw new IllegalArgumentException("Revisa pesaje, humedad e impurezas");
         MovimientoInventario movimiento = new MovimientoInventario();
@@ -160,33 +165,36 @@ public class InventarioService {
     }
 
     /** Registra una devolución total vinculada al despacho original y devuelve las cantidades a sus lotes. */
-    public MovimientoInventario registrarDevolucion(Long pedidoId, String motivo) {
+    public List<MovimientoInventario> registrarDevolucion(Long pedidoId, String motivo) {
         var despachos = movimientoRepository.findByPedidoVentaId(pedidoId).stream()
                 .filter(m -> m.getTipoMovimiento() == MovimientoInventario.TipoMovimiento.DESPACHO
                         && m.getEstado() == MovimientoInventario.EstadoMovimiento.CONFIRMADO)
                 .toList();
-        if (despachos.size() != 1) {
-            throw new IllegalStateException("No se encontró un despacho confirmado único para esta venta");
+        if (despachos.isEmpty()) {
+            throw new IllegalStateException("No se encontró un despacho confirmado para esta venta");
         }
-        var despacho = despachos.get(0);
-        var devolucion = new MovimientoInventario();
-        devolucion.setTipoMovimiento(MovimientoInventario.TipoMovimiento.DEVOLUCION);
-        devolucion.setAlmacenId(despacho.getAlmacenId());
-        devolucion.setPedidoVentaId(pedidoId);
-        devolucion.setObservaciones(motivo);
-        for (var linea : despacho.getDetalles()) {
-            var lote = obtenerLote(linea.getLoteId());
-            lote.reingresar(linea.getCantidad());
-            var devuelta = new DetalleMovimiento();
-            devuelta.setCodigoArticulo(linea.getCodigoArticulo());
-            devuelta.setCantidad(linea.getCantidad());
-            devuelta.setLoteId(linea.getLoteId());
-            devuelta.setUnidadMedida(linea.getUnidadMedida());
-            devolucion.agregarDetalle(devuelta);
+        var devoluciones = new java.util.ArrayList<MovimientoInventario>();
+        for (var despacho : despachos) {
+            var devolucion = new MovimientoInventario();
+            devolucion.setTipoMovimiento(MovimientoInventario.TipoMovimiento.DEVOLUCION);
+            devolucion.setAlmacenId(despacho.getAlmacenId());
+            devolucion.setPedidoVentaId(pedidoId);
+            devolucion.setObservaciones(motivo);
+            for (var linea : despacho.getDetalles()) {
+                var lote = obtenerLote(linea.getLoteId());
+                lote.reingresar(linea.getCantidad());
+                var devuelta = new DetalleMovimiento();
+                devuelta.setCodigoArticulo(linea.getCodigoArticulo());
+                devuelta.setCantidad(linea.getCantidad());
+                devuelta.setLoteId(linea.getLoteId());
+                devuelta.setUnidadMedida(linea.getUnidadMedida());
+                devolucion.agregarDetalle(devuelta);
+            }
+            devolucion.setEstado(MovimientoInventario.EstadoMovimiento.CONFIRMADO);
+            devolucion.setFechaConfirmacion(LocalDateTime.now());
+            devoluciones.add(movimientoRepository.save(devolucion));
         }
-        devolucion.setEstado(MovimientoInventario.EstadoMovimiento.CONFIRMADO);
-        devolucion.setFechaConfirmacion(LocalDateTime.now());
-        return movimientoRepository.save(devolucion);
+        return devoluciones;
     }
 
     public MovimientoInventario anular(Long movimientoId) {
@@ -212,6 +220,21 @@ public class InventarioService {
     @Transactional(readOnly = true)
     public BigDecimal consultarDisponible(Long almacenId, String codigoArticulo) {
         return loteRepository.sumarDisponible(codigoArticulo, almacenId);
+    }
+
+    private void validarTipoAlmacen(Almacen almacen, pe.edu.upeu.bomerp.articulo.model.Articulo articulo) {
+        if (almacen.getTipo() == Almacen.TipoAlmacen.GENERAL) return;
+        Almacen.TipoAlmacen esperado = switch (articulo.getTipoArticulo()) {
+            case MATERIA_PRIMA -> Almacen.TipoAlmacen.MATERIA_PRIMA;
+            case PRODUCTO_TERMINADO -> Almacen.TipoAlmacen.PRODUCTO_TERMINADO;
+            case INSUMO -> Almacen.TipoAlmacen.INSUMOS;
+            case EMPAQUE -> Almacen.TipoAlmacen.EMPAQUE;
+            case SUBPRODUCTO -> Almacen.TipoAlmacen.GENERAL;
+        };
+        if (almacen.getTipo() != esperado) {
+            throw new IllegalArgumentException("El artículo " + articulo.getCodigo() + " requiere un almacén "
+                    + esperado.name().toLowerCase().replace('_', ' '));
+        }
     }
 
     @Transactional(readOnly = true)

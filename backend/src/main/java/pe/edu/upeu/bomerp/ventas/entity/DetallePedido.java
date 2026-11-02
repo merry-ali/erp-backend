@@ -33,6 +33,9 @@ public class DetallePedido {
 
     @Column(nullable = false, length = 40)
     private String codigoArticulo;
+
+    @Column(name = "almacen_id")
+    private Long almacenId;
     
     @Column(nullable = false, precision = 14, scale = 3)
     private BigDecimal cantidad;
